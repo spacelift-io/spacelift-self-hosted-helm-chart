@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "semanticCommits": "enabled",
+  "dependencyDashboard": false,
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Action versions"
+    },
+    {
+      "matchDepNames": ["helm/helm"],
+      "extractVersion": "^v(?<version>.+)$",
+      "allowedVersions": "<4"
+    },
+    {
+      "matchDepNames": ["helmunittest/helm-unittest"],
+      "versioning": "loose"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/.*\\.ya?ml$/",
+        "/(^|/)Makefile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+\\s*:=?\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
+      ]
+    }
+  ]
+}

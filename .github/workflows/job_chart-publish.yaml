@@ -30,10 +30,6 @@ on:
         description: "Helm repo URL used by the smoke pull job, e.g. https://downloads.spacelift.io/helm."
         type: string
         required: true
-      smoke_pull_devel:
-        description: "Pass --devel to `helm pull` (needed when chart versions look like prereleases)."
-        type: boolean
-        default: false
 
     secrets:
       # These four are stored as repo *secrets* today but are not actually
@@ -55,7 +51,9 @@ on:
         required: true
 
 env:
-  HELM_VERSION: "3.20.0"
+  # renovate: datasource=github-releases depName=helm/helm
+  HELM_VERSION: "3.22.1"
+  CHART: spacelift-self-hosted
 
 jobs:
   registry:
@@ -65,7 +63,7 @@ jobs:
       id-token: write
       contents: read
     outputs:
-      chart_names: ${{ steps.discover.outputs.names }}
+      chart_version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Check out repository code
@@ -88,66 +86,28 @@ jobs:
 
       - name: Add the Spacelift Helm registry
         run: helm repo add spacelift s3://${{ secrets.aws_s3_bucket }}/helm
-        # The first time this step runs the index file won't exist, so allow the step to fail
-        continue-on-error: true
 
       - name: Set chart version number
+        id: version
         env:
           STRATEGY: ${{ inputs.chart_version_strategy }}
           PREFIX: ${{ inputs.chart_version_prefix }}
         run: |
-          case "$STRATEGY" in
-            timestamp)
-              ts=$(date +'%s')
-              echo "CHART_VERSION=${PREFIX}.${ts}" >> "$GITHUB_ENV"
-              ;;
-            tag)
-              if [[ "$GITHUB_REF_NAME" != v* ]]; then
-                echo "Tag does not look like a valid version: $GITHUB_REF_NAME" >&2
-                exit 1
-              fi
-              echo "CHART_VERSION=${GITHUB_REF_NAME:1}" >> "$GITHUB_ENV"
-              ;;
-            *)
-              echo "Unknown chart_version_strategy: $STRATEGY" >&2
-              exit 1
-              ;;
-          esac
+          if [[ "$STRATEGY" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${PREFIX}.$(date +'%s')"
+          fi
+          echo "CHART_VERSION=$version" >> "$GITHUB_ENV"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Discover charts
-        id: discover
-        run: |
-          set -euo pipefail
-          names=""
-          for f in */Chart.yaml; do
-            names+=" $(awk '$1=="name:"{print $2; exit}' "$f")"
-          done
-          echo "names=${names# }" >> "$GITHUB_OUTPUT"
+      - name: Package chart
+        run: helm package --version "$CHART_VERSION" --destination build/chart "$CHART/"
 
-      - name: Lint charts
-        run: |
-          set -euo pipefail
-          for f in */Chart.yaml; do
-            dir=$(dirname "$f")
-            echo "::group::helm lint --strict $dir"
-            helm dependency update "$dir"
-            helm lint --strict "$dir"
-            echo "::endgroup::"
-          done
+      - name: Push chart to S3
+        run: helm s3 push --force --relative "build/chart/${CHART}-${CHART_VERSION}.tgz" spacelift
 
-      - name: Package charts
-        run: |
-          set -euo pipefail
-          for f in */Chart.yaml; do
-            dir=$(dirname "$f")
-            name=$(awk '$1=="name:"{print $2; exit}' "$f")
-            echo "::group::package $name (from $dir/)"
-            helm package --version "$CHART_VERSION" --destination "build/chart/$dir" "$dir"
-            helm s3 push --force --relative "build/chart/$dir/${name}-${CHART_VERSION}.tgz" spacelift
-            echo "::endgroup::"
-          done
-
-      - name: Publish charts to Cloudflare R2
+      - name: Publish chart to Cloudflare R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.r2_access_key_id }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.r2_secret_access_key }}
@@ -171,29 +131,22 @@ jobs:
               --endpoint-url "$R2_ENDPOINT" >/dev/null
           }
 
+          TGZ="${CHART}-${CHART_VERSION}.tgz"
           STAGE=$(mktemp -d)
-          find build/chart -maxdepth 2 -name '*.tgz' -exec cp {} "$STAGE/" \;
-          ls -la "$STAGE"
+          cp "build/chart/$TGZ" "$STAGE/"
 
-          # Pull the current index.yaml so the rebuild merges rather than
-          # truncates the chart catalog.
-          if aws s3api head-object --bucket "$R2_BUCKET" --key helm/index.yaml \
-               --endpoint-url "$R2_ENDPOINT" >/dev/null 2>&1; then
-            aws s3api get-object \
-              --bucket "$R2_BUCKET" \
-              --key helm/index.yaml \
-              --endpoint-url "$R2_ENDPOINT" \
-              "$STAGE/previous-index.yaml" >/dev/null
-            helm repo index --merge "$STAGE/previous-index.yaml" "$STAGE"
-            rm -f "$STAGE/previous-index.yaml"
-          else
-            echo "No existing helm/index.yaml in R2 — generating fresh index."
-            helm repo index "$STAGE"
-          fi
+          # The index is shared with the charts in spacelift-helm-charts, so
+          # always merge into it. Never fall back to a fresh index: that would
+          # drop every other chart from the repository.
+          aws s3api get-object \
+            --bucket "$R2_BUCKET" \
+            --key helm/index.yaml \
+            --endpoint-url "$R2_ENDPOINT" \
+            "$STAGE/previous-index.yaml" >/dev/null
+          helm repo index --merge "$STAGE/previous-index.yaml" "$STAGE"
+          rm -f "$STAGE/previous-index.yaml"
 
-          for tgz in "$STAGE"/*.tgz; do
-            put "helm/$(basename "$tgz")" "$tgz"
-          done
+          put "helm/$TGZ" "$STAGE/$TGZ"
 
           # Upload the index last so consumers see a consistent state.
           put "helm/index.yaml" "$STAGE/index.yaml"
@@ -222,15 +175,12 @@ jobs:
         with:
           version: ${{ env.HELM_VERSION }}
 
-      - name: Pull charts
+      - name: Pull chart
         env:
           REPO_URL: ${{ inputs.smoke_pull_repo_url }}
-          DEVEL_FLAG: ${{ inputs.smoke_pull_devel && '--devel' || '' }}
-          CHART_NAMES: ${{ needs.registry.outputs.chart_names }}
+          CHART_VERSION: ${{ needs.registry.outputs.chart_version }}
         run: |
           set -euo pipefail
           helm repo add spacelift "$REPO_URL"
           helm repo update
-          for name in $CHART_NAMES; do
-            helm pull $DEVEL_FLAG "spacelift/$name"
-          done
+          helm pull "spacelift/$CHART" --version "$CHART_VERSION"

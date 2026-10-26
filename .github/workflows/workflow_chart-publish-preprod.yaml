@@ -1,4 +1,4 @@
-name: Preprod chart publish
+name: 🚀 Publish chart to preprod
 
 on:
   push:
@@ -26,7 +26,6 @@ jobs:
       cloudflare_purge_prefix: downloads.spacelift.dev/helm/
 
       smoke_pull_repo_url: https://downloads.spacelift.dev/helm
-      smoke_pull_devel: true
     secrets:
       aws_region: ${{ secrets.PREPROD_AWS_REGION }}
       aws_role_to_assume: ${{ secrets.PREPROD_AWS_ROLE_TO_ASSUME }}

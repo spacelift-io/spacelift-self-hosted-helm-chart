@@ -1,4 +1,4 @@
-name: Production chart publish
+name: 🚀 Publish chart to production
 
 on:
   push:

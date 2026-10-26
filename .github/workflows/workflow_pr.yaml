@@ -1,0 +1,62 @@
+name: 🧪 PR checks
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # renovate: datasource=github-releases depName=helm/helm
+  HELM_VERSION: "3.22.1"
+  CHART: spacelift-self-hosted
+
+jobs:
+  lint:
+    name: Lint chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v7
+
+      - name: Install helm
+        uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Lint chart
+        run: helm lint --strict "$CHART/"
+
+  test:
+    name: Run Helm unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v7
+
+      - name: Run Helm unit tests
+        run: make -C "$CHART" test
+
+  build:
+    name: Package chart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v7
+
+      - name: Install helm
+        uses: azure/setup-helm@v5
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Package chart
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: helm package --version "0.0.0-g${HEAD_SHA::7}" --destination build/chart "$CHART/"

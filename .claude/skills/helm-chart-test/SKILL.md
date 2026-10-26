@@ -10,7 +10,7 @@ Use this skill whenever the user asks to add, fix, or review helm-unittest tests
 
 ## Scope
 
-**This skill only applies to `spacelift-self-hosted/`.** It is the only chart in this repo wired up for helm-unittest. Charts live at the repo root (`spacelift-self-hosted/`, `spacelift-flows/`, `vcs-agent/`, ...), not under `charts/`.
+**This skill applies to `spacelift-self-hosted/`**, the only chart in this repo.
 
 If the user asks for helm-unittest tests for any other chart, say that chart has no helm-unittest setup and ask whether they want one added before writing anything.
 
@@ -317,7 +317,7 @@ make -C spacelift-self-hosted test HELM_UNITTEST_FILE='tests/vcs_gateway_test.ya
 
 `HELM_UNITTEST_FILE` is the only knob the Makefile exposes. The plugin's other flags - `-u`, `-q`, `-d`, `--skip-schema-validation` - are deliberately unreachable. Do not work around that by calling `docker run` by hand; if a test needs one of those flags, the test is wrong.
 
-CI runs the same target from `.github/workflows/test-self-hosted-chart.yml` on any pull request touching `spacelift-self-hosted/**`.
+CI runs the same target from `.github/workflows/workflow_pr.yaml` on every pull request.
 
 ### Version Pinning
 

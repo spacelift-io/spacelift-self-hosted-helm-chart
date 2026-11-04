@@ -102,7 +102,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Package chart
-        run: helm package --version "$CHART_VERSION" --destination build/chart "$CHART/"
+        run: helm package --version "$CHART_VERSION" --app-version "$CHART_VERSION" --destination build/chart "$CHART/"
 
       - name: Push chart to S3
         run: helm s3 push --force --relative "build/chart/${CHART}-${CHART_VERSION}.tgz" spacelift

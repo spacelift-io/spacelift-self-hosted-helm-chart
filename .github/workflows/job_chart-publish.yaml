@@ -99,10 +99,13 @@ jobs:
             version="${PREFIX}.$(date +'%s')"
           fi
           echo "CHART_VERSION=$version" >> "$GITHUB_ENV"
+          # Chart versions follow Spacelift versions. The chart version has no
+          # "v" prefix, the app version matches the Spacelift image tag, which has one.
+          echo "APP_VERSION=v$version" >> "$GITHUB_ENV"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Package chart
-        run: helm package --version "$CHART_VERSION" --destination build/chart "$CHART/"
+        run: helm package --version "$CHART_VERSION" --app-version "$APP_VERSION" --destination build/chart "$CHART/"
 
       - name: Push chart to S3
         run: helm s3 push --force --relative "build/chart/${CHART}-${CHART_VERSION}.tgz" spacelift

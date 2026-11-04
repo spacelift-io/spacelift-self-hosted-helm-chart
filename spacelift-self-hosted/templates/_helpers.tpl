@@ -197,6 +197,10 @@ set. The secrets from secretRef carry LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG only
 when they also carry the backend image, which goes to shared.image. Without both
 env vars the backend builds an empty launcher image, and runs on Kubernetes
 workers fail.
+
+The check also fails for users who moved shared.image to shared.backendImage
+while their secrets still carry both env vars. The chart cannot read the
+secrets, so the error message covers that case too.
 */}}
 {{- define "spacelift.launcherImageEnv" -}}
 	{{- $image := .Values.shared.launcherImage -}}
@@ -208,25 +212,38 @@ workers fail.
 	{{- else if not .Values.shared.image -}}
 		{{- /* The leading newline puts the message below Helm's "execution error at" prefix. */ -}}
 		{{- fail `
-shared.image is not set and shared.launcherImage.enabled is false, so
-nothing sets LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG. Without them, runs on
-Kubernetes workers fail.
+shared.image is not set and shared.launcherImage.enabled is false. The chart
+then sets no LAUNCHER_IMAGE or LAUNCHER_IMAGE_TAG, and it cannot check whether
+your secrets set them. Without them, runs on Kubernetes workers fail.
 
-This usually means the infrastructure comes from a Spacelift self-hosted
-Terraform module with create_container_registry = false. In that mode the module
-creates no container registry, so its outputs have no shared.image, and its
-kubernetes_secrets output has no LAUNCHER_IMAGE or LAUNCHER_IMAGE_TAG.
+Pick the case that fits you:
 
-To fix it, let the chart set the launcher image. Add this to your values:
+1. Your infrastructure comes from a Spacelift self-hosted Terraform module with
+   create_container_registry = false. The module creates no container registry,
+   so its kubernetes_secrets output has no LAUNCHER_IMAGE or LAUNCHER_IMAGE_TAG.
+   Let the chart set the launcher image:
 
-  shared:
-    launcherImage:
-      enabled: true
+     shared:
+       launcherImage:
+         enabled: true
 
-This pulls oci.spacelift.io/deploy/launcher, tagged with the chart appVersion.
-Set shared.launcherImage.registry, repository, tag or fips to pull another
-image. These values win over LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG in your
-secrets.` -}}
+   This pulls oci.spacelift.io/deploy/launcher, tagged with the chart appVersion.
+   Set registry, repository, tag or fips to pull another image.
+
+2. You moved shared.image to shared.backendImage, and your secrets still set
+   LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG, for example because the Terraform
+   module still creates the container registry. Keep shared.image for now, or
+   point shared.launcherImage at the image from your secrets:
+
+     shared:
+       launcherImage:
+         enabled: true
+         registry: <host part of LAUNCHER_IMAGE>
+         repository: <LAUNCHER_IMAGE after the host>
+         tag: <LAUNCHER_IMAGE_TAG>
+
+The shared.launcherImage values win over LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG
+in your secrets.` -}}
 	{{- end -}}
 {{- end -}}
 

@@ -39,6 +39,11 @@ the chart fails to render and asks you to set `shared.launcherImage.enabled: tru
 Without the keys, the backend cannot build the launcher image, and runs on
 Kubernetes workers fail.
 
+If you move `shared.image` to `shared.backendImage` while your secrets still set
+both keys, the chart fails to render too, because it cannot read your secrets.
+Point `shared.launcherImage` at the image from your secrets, or keep
+`shared.image` for now.
+
 ## Quick Start
 
 Depending on your environment, you can check the [guides here](https://docs.spacelift.io/self-hosted/latest/installing-spacelift/reference-architecture/guides) 

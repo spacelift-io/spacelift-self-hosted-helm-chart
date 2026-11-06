@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: server service
+templates:
+  - service.yaml
+tests:
+  - it: renders a Service with the default values
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: spacelift-server
+      - notExists:
+          path: metadata.annotations
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 80
+      - equal:
+          path: spec.ports[0].targetPort
+          value: server
+      - exists:
+          path: spec.selector
+      - notExists:
+          path: spec.externalTrafficPolicy
+      - notExists:
+          path: spec.loadBalancerSourceRanges
+
+  - it: renders annotations when set
+    set:
+      service.annotations:
+        cloud.google.com/neg: '{"ingress": true}'
+        cloud.google.com/backend-config: '{"default": "spacelift"}'
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            cloud.google.com/neg: '{"ingress": true}'
+            cloud.google.com/backend-config: '{"default": "spacelift"}'
+
+  - it: renders no annotations for an empty map
+    set:
+      service.annotations: {}
+    asserts:
+      - notExists:
+          path: metadata.annotations
+
+  - it: rejects annotations given as a string
+    set:
+      service.annotations: not-a-map
+    asserts:
+      - failedTemplate:
+          errorPattern: "at '/service/annotations': got string, want"
+
+  - it: adds additionalSpec fields to the Service spec
+    set:
+      service.additionalSpec:
+        externalTrafficPolicy: Local
+        loadBalancerSourceRanges:
+          - 10.0.0.0/8
+    asserts:
+      - equal:
+          path: spec.externalTrafficPolicy
+          value: Local
+      - equal:
+          path: spec.loadBalancerSourceRanges
+          value:
+            - 10.0.0.0/8
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 80
+      - exists:
+          path: spec.selector
+
+  - it: keeps type and port when additionalSpec is set
+    set:
+      service.type: LoadBalancer
+      service.port: 8080
+      service.additionalSpec:
+        externalTrafficPolicy: Local
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: spec.ports[0].port
+          value: 8080
+      - equal:
+          path: spec.externalTrafficPolicy
+          value: Local
+
+  - it: rejects additionalSpec given as a string
+    set:
+      service.additionalSpec: not-a-map
+    asserts:
+      - failedTemplate:
+          errorPattern: "at '/service/additionalSpec': got string, want object"

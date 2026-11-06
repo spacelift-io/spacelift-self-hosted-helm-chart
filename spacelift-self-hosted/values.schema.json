@@ -188,8 +188,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
-          "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
+          "$ref": "#/$defs/terminationGracePeriodSeconds"
         },
         "pdb": {
           "$ref": "#/$defs/podDisruptionBudget"
@@ -259,8 +258,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
-          "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
+          "$ref": "#/$defs/terminationGracePeriodSeconds"
         },
         "pdb": {
           "$ref": "#/$defs/podDisruptionBudget"
@@ -328,8 +326,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
-          "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
+          "$ref": "#/$defs/terminationGracePeriodSeconds"
         },
         "pdb": {
           "$ref": "#/$defs/podDisruptionBudget"
@@ -409,8 +406,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
-          "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
+          "$ref": "#/$defs/terminationGracePeriodSeconds"
         },
         "pdb": {
           "$ref": "#/$defs/podDisruptionBudget"
@@ -986,6 +982,14 @@
           "description": "Called immediately after container is created"
         }
       }
+    },
+    "terminationGracePeriodSeconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Seconds Kubernetes waits for the pod to stop before it kills it. Null uses the Kubernetes default of 30, 0 kills the pod right away"
     },
     "annotations": {
       "type": [

@@ -41,7 +41,7 @@ spec:
       serviceAccountName: {{ include "spacelift.serverServiceAccountName" . }}
       securityContext:
         {{- toYaml .Values.server.podSecurityContext | nindent 8 }}
-      {{- if .Values.server.terminationGracePeriodSeconds | empty | not }}
+      {{- if not (kindIs "invalid" .Values.server.terminationGracePeriodSeconds) }}
       terminationGracePeriodSeconds: {{ .Values.server.terminationGracePeriodSeconds }}
       {{- end }}
       {{- if .Values.cloudSqlProxy.enabled }}

@@ -5,6 +5,10 @@ metadata:
   name: {{ include "spacelift.fullname" . }}-vcs-gateway
   labels:
     {{- include "spacelift.vcsGatewayLabels" . | nindent 4 }}
+  {{- with .Values.vcsGateway.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.vcsGateway.replicaCount }}
   {{- with .Values.vcsGateway.strategy }}

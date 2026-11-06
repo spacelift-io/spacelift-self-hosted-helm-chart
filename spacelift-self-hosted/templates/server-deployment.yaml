@@ -4,6 +4,10 @@ metadata:
   name: {{ include "spacelift.fullname" . }}-server
   labels:
     {{- include "spacelift.serverLabels" . | nindent 4 }}
+  {{- with .Values.server.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.server.replicaCount }}
   {{- with .Values.server.strategy }}

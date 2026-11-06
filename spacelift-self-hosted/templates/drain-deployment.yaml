@@ -4,6 +4,10 @@ metadata:
   name: {{ include "spacelift.fullname" . }}-drain
   labels:
     {{- include "spacelift.drainLabels" . | nindent 4 }}
+  {{- with .Values.drain.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not (kindIs "invalid" .Values.drain.replicaCount) }}
   replicas: {{ .Values.drain.replicaCount }}

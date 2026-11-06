@@ -66,6 +66,8 @@ server:
       path: /readiness
       port: instrumentation
   podLabels: {}
+  # Annotations added to the server Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the server pods.
   podAnnotations: {}
   podSecurityContext: {}
@@ -107,6 +109,8 @@ drain:
       path: /startup
       port: instrumentation
   podLabels: {}
+  # Annotations added to the drain Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the drain pods.
   podAnnotations: {}
   podSecurityContext: {}
@@ -159,6 +163,8 @@ scheduler:
       path: /startup
       port: instrumentation
   podLabels: {}
+  # Annotations added to the scheduler Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the scheduler pods.
   podAnnotations: {}
   podSecurityContext: {}
@@ -207,6 +213,8 @@ vcsGateway:
       cpu: "100m"
     limits: {}
   podLabels: {}
+  # Annotations added to the VCS Gateway Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the VCS Gateway pods.
   podAnnotations: {}
   podSecurityContext: {}

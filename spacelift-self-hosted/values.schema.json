@@ -163,6 +163,9 @@
         "podLabels": {
           "$ref": "#/$defs/labels"
         },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
+        },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"
         },
@@ -236,6 +239,9 @@
         "podLabels": {
           "$ref": "#/$defs/labels"
         },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
+        },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"
         },
@@ -306,6 +312,9 @@
         },
         "podLabels": {
           "$ref": "#/$defs/labels"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
         },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"
@@ -389,6 +398,9 @@
         },
         "podLabels": {
           "$ref": "#/$defs/labels"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
         },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"

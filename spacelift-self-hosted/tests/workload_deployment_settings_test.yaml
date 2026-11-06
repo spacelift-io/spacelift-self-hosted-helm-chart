@@ -185,3 +185,80 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "/drain/strategy/rollingUpdate"
+
+  - it: sets deployment annotations on every workload
+    set:
+      server.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: server-secret
+      drain.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: drain-secret
+      scheduler.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: scheduler-secret
+      vcsGateway.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: vcs-gateway-secret
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: server-secret
+      - template: drain-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: drain-secret
+      - template: scheduler-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: scheduler-secret
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: vcs-gateway-secret
+
+  - it: sets no deployment annotations by default
+    asserts:
+      - notExists:
+          path: metadata.annotations
+
+  - it: keeps deployment annotations out of the pod template
+    set:
+      server.deploymentAnnotations:
+        example.com/deployment: "true"
+      drain.deploymentAnnotations:
+        example.com/deployment: "true"
+      scheduler.deploymentAnnotations:
+        example.com/deployment: "true"
+      vcsGateway.deploymentAnnotations:
+        example.com/deployment: "true"
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations
+
+  - it: keeps deployment and pod annotations apart
+    template: server-deployment.yaml
+    set:
+      server.deploymentAnnotations:
+        example.com/deployment: "true"
+      server.podAnnotations:
+        example.com/pod: "true"
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            example.com/deployment: "true"
+      - equal:
+          path: spec.template.metadata.annotations
+          value:
+            example.com/pod: "true"
+
+  - it: rejects deployment annotations with a non-string value
+    template: server-deployment.yaml
+    set:
+      server.deploymentAnnotations:
+        example.com/count: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "/server/deploymentAnnotations/example.com~1count"

@@ -44,7 +44,7 @@ Ask the user only when there are multiple plausible semantics, or when the affec
 - `spacelift-self-hosted/values.schema.json` - JSON Schema validated on every render, including helm-unittest runs.
 - `spacelift-self-hosted/templates/` - flat, no subdirectories. Templates are named `<component>-<kind>.yaml`, e.g. `vcs-gateway-deployment.yaml`, `server-pdb.yaml`.
 - `spacelift-self-hosted/tests/` - flat, one `<topic>_test.yaml` per behavior area.
-- `spacelift-self-hosted/tests/__snapshot__/` - snapshot output, currently empty.
+- `spacelift-self-hosted/tests/__snapshot__/` - snapshot output that `make test` writes. Empty while no suite uses snapshot assertions.
 
 ## helm-unittest Overview
 
@@ -156,10 +156,18 @@ Grouped by what they inspect. Every assertion also takes `not`, `template`, `doc
 | `failedTemplate` | Render fails; match the message with `errorMessage` or `errorPattern` |
 | `notFailedTemplate` | Render succeeds |
 
-Two families the plugin offers that this repo deliberately does not use:
+`equalRaw` / `notEqualRaw` / `matchRegexRaw` / `notMatchRegexRaw` exist to assert on `templates/NOTES.txt`, which we do not test. Do not use them.
 
-- `matchSnapshot` / `matchSnapshotRaw`. `make test` exposes no way to pass `-u`, by choice, so a snapshot can never be written or refreshed and `tests/__snapshot__/` stays empty. Do not write snapshot assertions.
-- `equalRaw` / `notEqualRaw` / `matchRegexRaw` / `notMatchRegexRaw`. These exist to assert on `templates/NOTES.txt`, which we do not test.
+### Snapshots
+
+No suite uses `matchSnapshot` / `matchSnapshotRaw` yet. `make test` always passes `-u`, so snapshot testing works without extra setup if the team decides to add it. With `-u`, a snapshot assertion never fails:
+
+- On the first run, it writes the snapshot to `tests/__snapshot__/`.
+- When the rendered output changes, it rewrites the snapshot and passes.
+
+So a snapshot shows a change only as a diff in `tests/__snapshot__/`. Review that diff and commit it together with the chart change. CI runs `make test` with `-u` as well, so a stale snapshot in the repo is rewritten in CI and does not fail the build.
+
+Write snapshot assertions only when the user asks for them. Keep the specific assertions next to them: those are what fail when behavior breaks.
 
 Use `decodeBase64: true` on `equal` / `notEqual` / `matchRegex` when asserting on a Secret's `data`, which Helm renders base64-encoded. Values under `stringData` need no decoding.
 
@@ -275,14 +283,19 @@ Correct:
 
 ```text
 spacelift-self-hosted/tests/
+  backend_image_test.yaml
   cloud_sql_proxy_test.yaml
   extra_manifests_test.yaml
+  launcher_image_test.yaml
   mqtt_service_test.yaml
   pdb_validation_test.yaml
+  server_ingress_test.yaml
   service_accounts_test.yaml
   shared_workload_config_test.yaml
   vcs_gateway_test.yaml
 ```
+
+The list goes stale as files are added. List the directory for the current set.
 
 Name files `<area>_test.yaml`. That is house convention rather than a plugin rule here: the plugin defaults to `tests/*_test.yaml`, but the Makefile overrides the glob to `tests/**/*.yaml`, so every `.yaml` under `tests/` runs as a suite and a stray file dropped in there gets executed.
 
@@ -315,21 +328,23 @@ make -C spacelift-self-hosted test HELM_UNITTEST_FILE='tests/vcs_gateway_test.ya
 
 `HELM_UNITTEST_FILE` is a glob relative to the chart directory; it defaults to `tests/**/*.yaml`.
 
-`HELM_UNITTEST_FILE` is the only knob the Makefile exposes. The plugin's other flags - `-u`, `-q`, `-d`, `--skip-schema-validation` - are deliberately unreachable. Do not work around that by calling `docker run` by hand; if a test needs one of those flags, the test is wrong.
+`HELM_UNITTEST_FILE` is the only knob the Makefile exposes. The Makefile always passes `--strict` and `-u` (update snapshots, see "Snapshots"). The plugin's other flags - `-q`, `-d`, `--skip-schema-validation` - are deliberately unreachable. Do not work around that by calling `docker run` by hand; if a test needs one of those flags, the test is wrong.
 
 CI runs the same target from `.github/workflows/workflow_pr.yaml` on every pull request.
 
-### Version Pinning
+### Running in Parallel
 
-The image is `helmunittest/helm-unittest:4.2.3-1.1.2` - Helm 4.2.3 with helm-unittest plugin 1.1.2 - set by `HELM_UNITTEST_TAG` in the chart Makefile.
+Each `make test` run is a fresh `--rm` container. While no suite uses snapshot assertions, a run writes nothing to the chart, so several runs can go at once, from one checkout or from separate git worktrees. Once snapshots exist, two runs in one checkout can write the same snapshot file, so give each run its own worktree. Agents that edit the chart in parallel still need one git worktree each. In a shared checkout, one agent's half-done edit to `values.schema.json` or a template fails every other agent's tests.
 
-Upstream docs on the `main` branch run ahead of 1.1.2. Check any feature you read about there against this build before using it:
+### Image Version
+
+The image tag comes from `HELM_UNITTEST_TAG` in `spacelift-self-hosted/Makefile`, and Renovate bumps it. Read the tag from the Makefile instead of assuming one.
+
+Upstream docs on the `main` branch can run ahead of the plugin version in that tag. Check any feature you read about there against the image the Makefile uses before relying on it:
 
 ```bash
-docker run --rm helmunittest/helm-unittest:4.2.3-1.1.2 --help
+docker run --rm "helmunittest/helm-unittest:$(sed -n 's/^HELM_UNITTEST_TAG := //p' spacelift-self-hosted/Makefile)" --help
 ```
-
-`--parallel` and `--max-workers` are the current example: documented upstream, absent from this build.
 
 ## Rules
 
@@ -345,5 +360,6 @@ docker run --rm helmunittest/helm-unittest:4.2.3-1.1.2 --help
 - Use `hasDocuments.filterAware: true` when asserting counts under selector or index filtering.
 - Use `template` / `templates` at test or assertion level to stop assertions bleeding across templates.
 - For negative paths, assert absence with `notExists` or `notContains`.
-- Do not write `matchSnapshot` assertions, and do not test `templates/NOTES.txt`. Neither is supported here.
+- Do not test `templates/NOTES.txt`.
+- Write `matchSnapshot` assertions only when the user asks for them. See "Snapshots".
 - Do not add a `.yaml` file under `tests/` that is not a test suite. The glob runs everything it finds.

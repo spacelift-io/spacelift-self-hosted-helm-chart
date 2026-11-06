@@ -57,6 +57,7 @@ server:
       path: /readiness
       port: instrumentation
   podLabels: {}
+  # Annotations added to the server pods.
   podAnnotations: {}
   podSecurityContext: {}
   volumes: []
@@ -95,6 +96,7 @@ drain:
       path: /startup
       port: instrumentation
   podLabels: {}
+  # Annotations added to the drain pods.
   podAnnotations: {}
   podSecurityContext: {}
   volumes: []
@@ -144,6 +146,7 @@ scheduler:
       path: /startup
       port: instrumentation
   podLabels: {}
+  # Annotations added to the scheduler pods.
   podAnnotations: {}
   podSecurityContext: {}
   volumes: []
@@ -184,6 +187,7 @@ vcsGateway:
       cpu: "100m"
     limits: {}
   podLabels: {}
+  # Annotations added to the VCS Gateway pods.
   podAnnotations: {}
   podSecurityContext: {}
   volumes: []

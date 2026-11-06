@@ -13,3 +13,22 @@ tests:
       - equal:
           path: spec.ports[0].port
           value: 1984
+
+  - it: adds additionalSpec fields to the Service spec
+    set:
+      mqttService.type: LoadBalancer
+      mqttService.additionalSpec:
+        externalTrafficPolicy: Local
+        loadBalancerSourceRanges:
+          - 10.0.0.0/8
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - equal:
+          path: spec.externalTrafficPolicy
+          value: Local
+      - equal:
+          path: spec.loadBalancerSourceRanges
+          value:
+            - 10.0.0.0/8

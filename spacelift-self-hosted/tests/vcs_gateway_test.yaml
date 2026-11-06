@@ -100,3 +100,40 @@ tests:
       - isKind:
           of: PodDisruptionBudget
         template: vcs-gateway-pdb.yaml
+
+  - it: uses service.type and no appProtocol for the VCS Gateway Service by default
+    template: vcs-gateway-service.yaml
+    set:
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+      service.type: NodePort
+    asserts:
+      - equal:
+          path: spec.type
+          value: NodePort
+      - notExists:
+          path: spec.ports[0].appProtocol
+
+  - it: sets the VCS Gateway Service type and the appProtocol of the gRPC port
+    template: vcs-gateway-service.yaml
+    set:
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+      vcsGateway.service.type: LoadBalancer
+      vcsGateway.service.appProtocol: kubernetes.io/h2c
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+      - contains:
+          path: spec.ports
+          content:
+            name: grpc
+            appProtocol: kubernetes.io/h2c
+          any: true
+      - notContains:
+          path: spec.ports
+          content:
+            name: http
+            appProtocol: kubernetes.io/h2c
+          any: true

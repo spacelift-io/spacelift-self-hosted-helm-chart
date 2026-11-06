@@ -57,12 +57,16 @@ server:
       path: /readiness
       port: instrumentation
   podLabels: {}
+  podAnnotations: {}
   podSecurityContext: {}
   volumes: []
   volumeMounts: []
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # Seconds Kubernetes waits for the pod to stop before it kills it.
+  # Empty or 0 uses the Kubernetes default of 30.
+  terminationGracePeriodSeconds:
   # serviceAccount controls whether an individual service account should be created for the server.
   # If create is set to true, a name must be specified.
   serviceAccount:
@@ -91,12 +95,16 @@ drain:
       path: /startup
       port: instrumentation
   podLabels: {}
+  podAnnotations: {}
   podSecurityContext: {}
   volumes: []
   volumeMounts: []
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # Seconds Kubernetes waits for the pod to stop before it kills it.
+  # Empty or 0 uses the Kubernetes default of 30.
+  terminationGracePeriodSeconds:
   # serviceAccount controls whether an individual service account should be created for the drain.
   # If create is set to true, a name must be specified.
   serviceAccount:
@@ -136,12 +144,16 @@ scheduler:
       path: /startup
       port: instrumentation
   podLabels: {}
+  podAnnotations: {}
   podSecurityContext: {}
   volumes: []
   volumeMounts: []
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # Seconds Kubernetes waits for the pod to stop before it kills it.
+  # Empty or 0 uses the Kubernetes default of 30.
+  terminationGracePeriodSeconds:
   # serviceAccount controls whether an individual service account should be created for the scheduler.
   # If create is set to true, a name must be specified.
   serviceAccount:
@@ -179,6 +191,9 @@ vcsGateway:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+  # Seconds Kubernetes waits for the pod to stop before it kills it.
+  # Empty or 0 uses the Kubernetes default of 30.
+  terminationGracePeriodSeconds:
   # serviceAccount controls whether an individual service account should be created for the VCS Gateway.
   # If create is set to true, a name must be specified.
   serviceAccount:
@@ -188,6 +203,10 @@ vcsGateway:
     annotations: {}
   lifecycle: {}
   service:
+    # Defaults to service.type. For example:
+    #  type: LoadBalancer
+    # appProtocol of the gRPC port, for example kubernetes.io/h2c for GKE.
+    appProtocol: ""
     annotations: {}
   ingress:
     enabled: true # Set to true for AWS, false for GKE
@@ -233,6 +252,12 @@ mqttService:
   type: ClusterIP
   port: 1984
   annotations: {}
+  # Extra fields added to the Service spec. Do not set type, ports or
+  # selector here, the chart sets them. For example:
+  #  additionalSpec:
+  #    loadBalancerSourceRanges:
+  #      - 10.0.0.0/8
+  additionalSpec: {}
 
 ingress:
   enabled: true

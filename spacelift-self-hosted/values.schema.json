@@ -188,7 +188,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
         },
         "pdb": {
@@ -259,7 +259,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
         },
         "pdb": {
@@ -328,7 +328,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
         },
         "pdb": {
@@ -409,7 +409,7 @@
           "$ref": "#/$defs/lifecycle"
         },
         "terminationGracePeriodSeconds": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "description": "Duration in seconds that Kubernetes waits for the pod to terminate gracefully"
         },
         "pdb": {

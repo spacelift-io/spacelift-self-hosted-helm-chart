@@ -10,9 +10,9 @@ Use this skill whenever the user asks to add, fix, or review helm-unittest tests
 
 ## Scope
 
-**This skill applies to `spacelift-self-hosted/`**, the only chart in this repo.
+**This skill applies to the `spacelift-self-hosted/` chart.**
 
-If the user asks for helm-unittest tests for any other chart, say that chart has no helm-unittest setup and ask whether they want one added before writing anything.
+If the user asks for helm-unittest tests for another chart, check whether that chart has its own helm-unittest setup. If it does not, say so and ask whether they want one added before writing anything.
 
 Paths in this document are relative to the repo root.
 
@@ -20,7 +20,7 @@ Paths in this document are relative to the repo root.
 
 **During feature implementation**, infer the affected templates from the diff or the requested change. Add or update focused tests for the changed rendered behavior without pausing to ask about scope, unless the requested behavior is ambiguous.
 
-**If `[component]` is given** (e.g. `vcs-gateway`, `server`, `drain`, `scheduler`), work on the templates with that prefix and the matching test file.
+**If `[component]` is given** (e.g. `vcs-gateway`, `server`, `drain`, `scheduler`), work on the templates with that prefix and the test files that cover them.
 
 **If nothing is given for a standalone task**, ask which component or template the user wants covered.
 
@@ -40,11 +40,11 @@ Ask the user only when there are multiple plausible semantics, or when the affec
 ## Chart Layout
 
 - `spacelift-self-hosted/Chart.yaml` - chart metadata.
-- `spacelift-self-hosted/values.yaml` - defaults. Top-level keys: `shared`, `server`, `drain`, `scheduler`, `vcsGateway`, `cloudSqlProxy`, `serviceAccount`, `service`, `mqttService`, `ingress`, `ingressV6`, `extraManifests`, `nameOverride`, `fullnameOverride`.
+- `spacelift-self-hosted/values.yaml` - defaults.
 - `spacelift-self-hosted/values.schema.json` - JSON Schema validated on every render, including helm-unittest runs.
-- `spacelift-self-hosted/templates/` - flat, no subdirectories. Templates are named `<component>-<kind>.yaml`, e.g. `vcs-gateway-deployment.yaml`, `server-pdb.yaml`.
-- `spacelift-self-hosted/tests/` - flat, one `<topic>_test.yaml` per behavior area.
-- `spacelift-self-hosted/tests/__snapshot__/` - snapshot output, currently empty.
+- `spacelift-self-hosted/templates/` - the templates, mostly named `<component>-<kind>.yaml`, e.g. `vcs-gateway-deployment.yaml`, `server-pdb.yaml`.
+- `spacelift-self-hosted/tests/` - the test suites, one `<area>_test.yaml` file per behavior area. Extend an existing file when the behavior fits its suite; add a new file for a new area.
+- `spacelift-self-hosted/tests/__snapshot__/` - snapshot output that `make test` writes. Empty while no suite uses snapshot assertions.
 
 ## helm-unittest Overview
 
@@ -52,12 +52,12 @@ Tests are YAML files in `spacelift-self-hosted/tests/` that assert on rendered K
 
 ### Repo Conventions
 
-- First line of every test file is the schema comment:
+- Start every test file with the schema comment:
   `# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json`
-- Template references are **bare filenames** relative to `templates/`: `vcs-gateway-deployment.yaml`. The plugin also accepts a `templates/` prefix, but every existing test here omits it - match that.
-- Values come from inline `set` blocks. This repo has no `tests/values/` or `ci/` values files; do not invent them.
+- Reference templates by their path relative to `templates/`, without a `templates/` prefix: `vcs-gateway-deployment.yaml`. The plugin accepts the prefix too, but this repo leaves it out.
+- Set values with inline `set` blocks, so each test shows its own inputs. Do not add separate values files for tests unless the user asks.
 - Tests run with `--strict`, so an unknown or misspelled field in a test file fails the run instead of being ignored.
-- `values.schema.json` sets `additionalProperties: false` on objects. A `set` key that is not in the schema fails the render. If a test needs a new value, the schema must be updated too - and that is a chart change, not a test change, so flag it to the user.
+- `values.schema.json` sets `additionalProperties: false` on its objects, so a `set` key that is not in the schema fails the render. If a test needs a new value, the schema must be updated too - and that is a chart change, not a test change, so flag it to the user.
 - The plugin has a `--skip-schema-validation` flag. This repo does not pass it and should not start. A schema rejection means the test is setting something the chart does not accept, which is worth knowing.
 
 ### Test File Structure
@@ -156,10 +156,18 @@ Grouped by what they inspect. Every assertion also takes `not`, `template`, `doc
 | `failedTemplate` | Render fails; match the message with `errorMessage` or `errorPattern` |
 | `notFailedTemplate` | Render succeeds |
 
-Two families the plugin offers that this repo deliberately does not use:
+`equalRaw` / `notEqualRaw` / `matchRegexRaw` / `notMatchRegexRaw` exist to assert on `templates/NOTES.txt`, which we do not test. Do not use them.
 
-- `matchSnapshot` / `matchSnapshotRaw`. `make test` exposes no way to pass `-u`, by choice, so a snapshot can never be written or refreshed and `tests/__snapshot__/` stays empty. Do not write snapshot assertions.
-- `equalRaw` / `notEqualRaw` / `matchRegexRaw` / `notMatchRegexRaw`. These exist to assert on `templates/NOTES.txt`, which we do not test.
+### Snapshots
+
+`make test` always passes `-u`, so `matchSnapshot` / `matchSnapshotRaw` work without extra setup. With `-u`, a snapshot assertion never fails:
+
+- On the first run, it writes the snapshot to `tests/__snapshot__/`.
+- When the rendered output changes, it rewrites the snapshot and passes.
+
+So a snapshot shows a change only as a diff in `tests/__snapshot__/`. Review that diff and commit it together with the chart change. CI runs `make test` with `-u` as well, so a stale snapshot in the repo is rewritten in CI and does not fail the build.
+
+Do not add snapshot assertions to a suite unless the user asks for them. When a suite already has them, keep them, and review the snapshot diff your change causes. Either way, keep the specific assertions: those are what fail when behavior breaks.
 
 Use `decodeBase64: true` on `equal` / `notEqual` / `matchRegex` when asserting on a Secret's `data`, which Helm renders base64-encoded. Values under `stringData` need no decoding.
 
@@ -210,7 +218,7 @@ Several templates guard values with `required`, e.g. `vcsGateway.domain` and `vc
 
 ### Multi-Template Safety
 
-Most suites here list several templates. Set `template` on every assertion unless the test intentionally targets all of them.
+When a suite lists several templates, set `template` on every assertion unless the test intentionally targets all of them.
 
 Put `template` at the assertion root, not inside the assertion parameters.
 
@@ -269,25 +277,6 @@ Correct:
           value: example-release-credentials
 ```
 
-## Test File Organization
-
-`spacelift-self-hosted/templates/` is flat, so `tests/` is flat too. Group tests by behavior area, one file per area:
-
-```text
-spacelift-self-hosted/tests/
-  cloud_sql_proxy_test.yaml
-  extra_manifests_test.yaml
-  mqtt_service_test.yaml
-  pdb_validation_test.yaml
-  service_accounts_test.yaml
-  shared_workload_config_test.yaml
-  vcs_gateway_test.yaml
-```
-
-Name files `<area>_test.yaml`. That is house convention rather than a plugin rule here: the plugin defaults to `tests/*_test.yaml`, but the Makefile overrides the glob to `tests/**/*.yaml`, so every `.yaml` under `tests/` runs as a suite and a stray file dropped in there gets executed.
-
-Extend an existing file when the behavior fits its suite; add a new file for a new area.
-
 ## Writing Workflow
 
 1. Read the template under test. Understand every conditional, value reference, helper call, and document it emits.
@@ -315,21 +304,23 @@ make -C spacelift-self-hosted test HELM_UNITTEST_FILE='tests/vcs_gateway_test.ya
 
 `HELM_UNITTEST_FILE` is a glob relative to the chart directory; it defaults to `tests/**/*.yaml`.
 
-`HELM_UNITTEST_FILE` is the only knob the Makefile exposes. The plugin's other flags - `-u`, `-q`, `-d`, `--skip-schema-validation` - are deliberately unreachable. Do not work around that by calling `docker run` by hand; if a test needs one of those flags, the test is wrong.
+The Makefile always passes `--strict` and `-u` (update snapshots, see "Snapshots"). Do not call `docker run` by hand to pass plugin flags the Makefile does not expose; if a test needs such a flag, the test is wrong.
 
-CI runs the same target from `.github/workflows/workflow_pr.yaml` on every pull request.
+CI runs the same target on every pull request.
 
-### Version Pinning
+### Running in Parallel
 
-The image is `helmunittest/helm-unittest:4.2.3-1.1.2` - Helm 4.2.3 with helm-unittest plugin 1.1.2 - set by `HELM_UNITTEST_TAG` in the chart Makefile.
+Each `make test` run is a fresh `--rm` container. While no suite uses snapshot assertions, a run writes nothing to the chart, so several runs can go at once, from one checkout or from separate git worktrees. Once snapshots exist, two runs in one checkout can write the same snapshot file, so give each run its own worktree. Agents that edit the chart in parallel still need one git worktree each. In a shared checkout, one agent's half-done edit to `values.schema.json` or a template fails every other agent's tests.
 
-Upstream docs on the `main` branch run ahead of 1.1.2. Check any feature you read about there against this build before using it:
+### Image Version
+
+The image tag comes from `HELM_UNITTEST_TAG` in `spacelift-self-hosted/Makefile`, and Renovate bumps it. Read the tag from the Makefile instead of assuming one.
+
+Upstream docs on the `main` branch can run ahead of the plugin version in that tag. Check any feature you read about there against the image the Makefile uses before relying on it:
 
 ```bash
-docker run --rm helmunittest/helm-unittest:4.2.3-1.1.2 --help
+docker run --rm "helmunittest/helm-unittest:$(sed -n 's/^HELM_UNITTEST_TAG := //p' spacelift-self-hosted/Makefile)" --help
 ```
-
-`--parallel` and `--max-workers` are the current example: documented upstream, absent from this build.
 
 ## Rules
 
@@ -337,7 +328,7 @@ docker run --rm helmunittest/helm-unittest:4.2.3-1.1.2 --help
 - Do not modify templates, `values.yaml`, `values.schema.json`, or `Chart.yaml` as part of a test-writing task unless the user explicitly widens the scope.
 - Never run destructive shell commands.
 - Always run the relevant test command after writing tests.
-- Reference templates by bare filename; the `templates/` prefix is legal upstream but unused here.
+- Reference templates by their path relative to `templates/`, without the `templates/` prefix.
 - Assert on `spacelift-*` names by default; `fullnameOverride` is `spacelift`.
 - Set enable flags explicitly instead of relying on defaults when a template renders conditionally.
 - If a test needs a value that `values.schema.json` rejects, stop and tell the user - the schema change is a chart change.
@@ -345,5 +336,6 @@ docker run --rm helmunittest/helm-unittest:4.2.3-1.1.2 --help
 - Use `hasDocuments.filterAware: true` when asserting counts under selector or index filtering.
 - Use `template` / `templates` at test or assertion level to stop assertions bleeding across templates.
 - For negative paths, assert absence with `notExists` or `notContains`.
-- Do not write `matchSnapshot` assertions, and do not test `templates/NOTES.txt`. Neither is supported here.
+- Do not test `templates/NOTES.txt`.
+- Do not add snapshot assertions unless the user asks for them. See "Snapshots".
 - Do not add a `.yaml` file under `tests/` that is not a test suite. The glob runs everything it finds.

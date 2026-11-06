@@ -65,8 +65,8 @@ server:
   tolerations: []
   affinity: {}
   # Seconds Kubernetes waits for the pod to stop before it kills it.
-  # Empty or 0 uses the Kubernetes default of 30.
-  terminationGracePeriodSeconds:
+  # null uses the Kubernetes default of 30. 0 kills the pod right away.
+  terminationGracePeriodSeconds: null
   # serviceAccount controls whether an individual service account should be created for the server.
   # If create is set to true, a name must be specified.
   serviceAccount:
@@ -103,8 +103,8 @@ drain:
   tolerations: []
   affinity: {}
   # Seconds Kubernetes waits for the pod to stop before it kills it.
-  # Empty or 0 uses the Kubernetes default of 30.
-  terminationGracePeriodSeconds:
+  # null uses the Kubernetes default of 30. 0 kills the pod right away.
+  terminationGracePeriodSeconds: null
   # serviceAccount controls whether an individual service account should be created for the drain.
   # If create is set to true, a name must be specified.
   serviceAccount:
@@ -152,8 +152,8 @@ scheduler:
   tolerations: []
   affinity: {}
   # Seconds Kubernetes waits for the pod to stop before it kills it.
-  # Empty or 0 uses the Kubernetes default of 30.
-  terminationGracePeriodSeconds:
+  # null uses the Kubernetes default of 30. 0 kills the pod right away.
+  terminationGracePeriodSeconds: null
   # serviceAccount controls whether an individual service account should be created for the scheduler.
   # If create is set to true, a name must be specified.
   serviceAccount:
@@ -192,8 +192,8 @@ vcsGateway:
   tolerations: []
   affinity: {}
   # Seconds Kubernetes waits for the pod to stop before it kills it.
-  # Empty or 0 uses the Kubernetes default of 30.
-  terminationGracePeriodSeconds:
+  # null uses the Kubernetes default of 30. 0 kills the pod right away.
+  terminationGracePeriodSeconds: null
   # serviceAccount controls whether an individual service account should be created for the VCS Gateway.
   # If create is set to true, a name must be specified.
   serviceAccount:

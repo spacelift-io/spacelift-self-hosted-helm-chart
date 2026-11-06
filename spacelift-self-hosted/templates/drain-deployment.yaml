@@ -30,7 +30,7 @@ spec:
       serviceAccountName: {{ include "spacelift.drainServiceAccountName" . }}
       securityContext:
         {{- toYaml .Values.drain.podSecurityContext | nindent 8 }}
-      {{- if .Values.drain.terminationGracePeriodSeconds | empty | not }}
+      {{- if not (kindIs "invalid" .Values.drain.terminationGracePeriodSeconds) }}
       terminationGracePeriodSeconds: {{ .Values.drain.terminationGracePeriodSeconds }}
       {{- end }}
       {{- if .Values.cloudSqlProxy.enabled }}

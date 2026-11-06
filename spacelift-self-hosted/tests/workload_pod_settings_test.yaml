@@ -72,6 +72,17 @@ tests:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 90
 
+  - it: renders a terminationGracePeriodSeconds of 0
+    set:
+      server.terminationGracePeriodSeconds: 0
+      drain.terminationGracePeriodSeconds: 0
+      scheduler.terminationGracePeriodSeconds: 0
+      vcsGateway.terminationGracePeriodSeconds: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 0
+
   - it: leaves terminationGracePeriodSeconds to Kubernetes by default
     asserts:
       - notExists:
@@ -84,3 +95,11 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "/server/terminationGracePeriodSeconds': got string, want"
+
+  - it: rejects a negative terminationGracePeriodSeconds
+    template: server-deployment.yaml
+    set:
+      server.terminationGracePeriodSeconds: -1
+    asserts:
+      - failedTemplate:
+          errorPattern: "/server/terminationGracePeriodSeconds': minimum: got -1, want 0"

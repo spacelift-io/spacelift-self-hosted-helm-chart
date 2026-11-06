@@ -364,3 +364,113 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: ingressV6.ingressClassName
+
+  - it: uses the cert TLS secret on the IPv4 Ingress by default
+    set:
+      shared.serverHostname: spacelift.example.com
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - spacelift.example.com
+              secretName: cert
+        template: server-ingress.yaml
+
+  - it: sets a custom TLS secret name on the IPv4 Ingress only
+    set:
+      shared.serverHostname: spacelift.example.com
+      ingress.tlsSecretName: custom-tls
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - spacelift.example.com
+              secretName: custom-tls
+        template: server-ingress.yaml
+      - equal:
+          path: spec.tls[0].secretName
+          value: cert
+        template: server-ingress-v6.yaml
+
+  - it: leaves out secretName on the IPv4 Ingress when the TLS secret name is empty
+    set:
+      shared.serverHostname: spacelift.example.com
+      ingress.tlsSecretName: ""
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - spacelift.example.com
+        template: server-ingress.yaml
+      - notExists:
+          path: spec.tls[0].secretName
+        template: server-ingress.yaml
+      - equal:
+          path: spec.tls[0].secretName
+          value: cert
+        template: server-ingress-v6.yaml
+
+  - it: fails when ingress.tlsSecretName is not a string
+    set:
+      ingress.tlsSecretName: 5
+    asserts:
+      - failedTemplate:
+          errorPattern: ingress.tlsSecretName
+
+  - it: uses the cert TLS secret on the IPv6 Ingress by default
+    set:
+      shared.serverHostname: spacelift.example.com
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - spacelift.example.com
+              secretName: cert
+        template: server-ingress-v6.yaml
+
+  - it: sets a custom TLS secret name on the IPv6 Ingress only
+    set:
+      shared.serverHostname: spacelift.example.com
+      ingressV6.tlsSecretName: custom-tls
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - spacelift.example.com
+              secretName: custom-tls
+        template: server-ingress-v6.yaml
+      - equal:
+          path: spec.tls[0].secretName
+          value: cert
+        template: server-ingress.yaml
+
+  - it: leaves out secretName on the IPv6 Ingress when the TLS secret name is empty
+    set:
+      shared.serverHostname: spacelift.example.com
+      ingressV6.tlsSecretName: ""
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - spacelift.example.com
+        template: server-ingress-v6.yaml
+      - notExists:
+          path: spec.tls[0].secretName
+        template: server-ingress-v6.yaml
+      - equal:
+          path: spec.tls[0].secretName
+          value: cert
+        template: server-ingress.yaml
+
+  - it: fails when ingressV6.tlsSecretName is not a string
+    set:
+      ingressV6.tlsSecretName: 5
+    asserts:
+      - failedTemplate:
+          errorPattern: ingressV6.tlsSecretName

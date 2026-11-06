@@ -16,7 +16,9 @@ spec:
   tls:
     - hosts:
         - {{ .Values.shared.serverHostname }}
-      secretName: cert
+      {{- with .Values.ingressV6.tlsSecretName }}
+      secretName: {{ . | quote }}
+      {{- end }}
   rules:
     - host: {{ .Values.shared.serverHostname }}
       http:

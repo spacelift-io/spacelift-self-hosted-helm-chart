@@ -137,3 +137,66 @@ tests:
             name: http
             appProtocol: kubernetes.io/h2c
           any: true
+
+  - it: uses the vcs-gateway-cert TLS secret on the VCS Gateway Ingress by default
+    template: vcs-gateway-ingress.yaml
+    set:
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - vcs-gateway.example.com
+              secretName: vcs-gateway-cert
+
+  - it: sets a custom TLS secret name on the VCS Gateway Ingress
+    template: vcs-gateway-ingress.yaml
+    set:
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+      vcsGateway.ingress.tlsSecretName: custom-tls
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - vcs-gateway.example.com
+              secretName: custom-tls
+
+  - it: leaves out secretName on the VCS Gateway Ingress when the TLS secret name is empty
+    template: vcs-gateway-ingress.yaml
+    set:
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+      vcsGateway.ingress.tlsSecretName: ""
+    asserts:
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - vcs-gateway.example.com
+      - notExists:
+          path: spec.tls[0].secretName
+
+  - it: does not use vcsGateway.gateway.certificateRef for the VCS Gateway Ingress
+    template: vcs-gateway-ingress.yaml
+    set:
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+      vcsGateway.gateway.certificateRef: gateway-cert
+    asserts:
+      - equal:
+          path: spec.tls[0].secretName
+          value: vcs-gateway-cert
+
+  - it: fails when vcsGateway.ingress.tlsSecretName is not a string
+    template: vcs-gateway-ingress.yaml
+    set:
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+      vcsGateway.ingress.tlsSecretName: 5
+    asserts:
+      - failedTemplate:
+          errorPattern: vcsGateway.ingress.tlsSecretName

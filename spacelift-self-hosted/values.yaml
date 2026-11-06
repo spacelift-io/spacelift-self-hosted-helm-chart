@@ -280,8 +280,12 @@ serviceAccount:
   annotations: {}
 
 service:
+  # Kubernetes Service type of the server Service.
   type: ClusterIP
+  # Port the server Service listens on.
   port: 80
+  # Annotations added to the server Service, for example cloud.google.com/neg on GKE.
+  annotations: {}
 
 mqttService:
   enabled: true

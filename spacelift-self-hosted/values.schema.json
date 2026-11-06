@@ -584,6 +584,9 @@
           "$ref": "#/$defs/port",
           "default": 80,
           "description": "Service port"
+        },
+        "annotations": {
+          "$ref": "#/$defs/annotations"
         }
       }
     },

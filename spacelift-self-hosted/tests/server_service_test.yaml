@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: server service
+templates:
+  - service.yaml
+tests:
+  - it: renders a Service with the default values
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: spacelift-server
+      - notExists:
+          path: metadata.annotations
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 80
+      - equal:
+          path: spec.ports[0].targetPort
+          value: server
+      - exists:
+          path: spec.selector
+
+  - it: renders annotations when set
+    set:
+      service.annotations:
+        cloud.google.com/neg: '{"ingress": true}'
+        cloud.google.com/backend-config: '{"default": "spacelift"}'
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            cloud.google.com/neg: '{"ingress": true}'
+            cloud.google.com/backend-config: '{"default": "spacelift"}'
+
+  - it: renders no annotations for an empty map
+    set:
+      service.annotations: {}
+    asserts:
+      - notExists:
+          path: metadata.annotations
+
+  - it: rejects annotations given as a string
+    set:
+      service.annotations: not-a-map
+    asserts:
+      - failedTemplate:
+          errorPattern: "at '/service/annotations': got string, want"

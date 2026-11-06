@@ -5,8 +5,8 @@ metadata:
   labels:
     {{- include "spacelift.drainLabels" . | nindent 4 }}
 spec:
-  {{- with .Values.drain.replicaCount }}
-  replicas: {{ . }}
+  {{- if not (kindIs "invalid" .Values.drain.replicaCount) }}
+  replicas: {{ .Values.drain.replicaCount }}
   {{- end }}
   selector:
     matchLabels:

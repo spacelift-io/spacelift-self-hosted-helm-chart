@@ -42,7 +42,17 @@ v6.4.0 or set scheduler.enabled back to true.
 
 {{- if .Values.shared.image }}
 
-WARNING: shared.image is deprecated and will be removed in a future release. Move
-the image to shared.backendImage (registry, repository, tag, digest, fips). While
-shared.image is set, the chart ignores shared.backendImage.
+WARNING: shared.image is deprecated and will be removed in a future major
+release. Move the image to shared.backendImage (registry, repository, tag,
+digest, fips). While shared.image is set, the chart ignores shared.backendImage.
+{{- if not .Values.shared.launcherImage.enabled }}
+
+Before you remove shared.image, also set shared.launcherImage: enabled: true,
+plus the registry, repository and tag of the LAUNCHER_IMAGE and
+LAUNCHER_IMAGE_TAG in your secrets. Otherwise the chart fails to render.
+
+A future major release will remove shared.launcherImage.enabled and always set
+LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG from shared.launcherImage, so the keys in
+your secrets will have no effect.
+{{- end }}
 {{- end }}

@@ -324,3 +324,43 @@ tests:
           path: spec.rules[0].http.paths
           count: 1
         template: server-ingress.yaml
+
+  - it: does not set ingressClassName on either Ingress by default
+    asserts:
+      - notExists:
+          path: spec.ingressClassName
+        template: server-ingress.yaml
+      - notExists:
+          path: spec.ingressClassName
+        template: server-ingress-v6.yaml
+
+  - it: sets ingressClassName on the IPv6 Ingress only
+    set:
+      ingressV6.ingressClassName: alb
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: alb
+        template: server-ingress-v6.yaml
+      - notExists:
+          path: spec.ingressClassName
+        template: server-ingress.yaml
+
+  - it: does not apply ingress.ingressClassName to the IPv6 Ingress
+    set:
+      ingress.ingressClassName: nginx
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+        template: server-ingress.yaml
+      - notExists:
+          path: spec.ingressClassName
+        template: server-ingress-v6.yaml
+
+  - it: fails when ingressV6.ingressClassName is not a string
+    set:
+      ingressV6.ingressClassName: 5
+    asserts:
+      - failedTemplate:
+          errorPattern: ingressV6.ingressClassName

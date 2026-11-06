@@ -621,6 +621,10 @@
           "default": true,
           "description": "Enable IPv6 ingress"
         },
+        "ingressClassName": {
+          "type": "string",
+          "description": "Ingress class name"
+        },
         "annotations": {
           "$ref": "#/$defs/annotations"
         },

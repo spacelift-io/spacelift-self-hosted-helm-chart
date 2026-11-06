@@ -442,6 +442,11 @@
               "type": "string",
               "description": "Ingress class name"
             },
+            "tlsSecretName": {
+              "type": "string",
+              "default": "vcs-gateway-cert",
+              "description": "Name of the Secret that holds the TLS certificate. An empty string leaves out secretName from the Ingress TLS entry"
+            },
             "annotations": {
               "$ref": "#/$defs/annotations"
             }
@@ -600,6 +605,11 @@
           "type": "string",
           "description": "Ingress class name"
         },
+        "tlsSecretName": {
+          "type": "string",
+          "default": "cert",
+          "description": "Name of the Secret that holds the TLS certificate. An empty string leaves out secretName from the Ingress TLS entry"
+        },
         "annotations": {
           "$ref": "#/$defs/annotations"
         },
@@ -620,6 +630,15 @@
           "type": "boolean",
           "default": true,
           "description": "Enable IPv6 ingress"
+        },
+        "ingressClassName": {
+          "type": "string",
+          "description": "Ingress class name"
+        },
+        "tlsSecretName": {
+          "type": "string",
+          "default": "cert",
+          "description": "Name of the Secret that holds the TLS certificate. An empty string leaves out secretName from the Ingress TLS entry"
         },
         "annotations": {
           "$ref": "#/$defs/annotations"

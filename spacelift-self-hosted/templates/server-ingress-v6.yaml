@@ -10,10 +10,15 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  {{- with .Values.ingressV6.ingressClassName }}
+  ingressClassName: {{ . }}
+  {{- end }}
   tls:
     - hosts:
         - {{ .Values.shared.serverHostname }}
-      secretName: cert
+      {{- with .Values.ingressV6.tlsSecretName }}
+      secretName: {{ . | quote }}
+      {{- end }}
   rules:
     - host: {{ .Values.shared.serverHostname }}
       http:

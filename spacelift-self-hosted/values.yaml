@@ -40,6 +40,15 @@ shared:
 
 server:
   replicaCount: 3
+  # Deployment strategy. Helm merges this map with the defaults, so to switch to
+  # type: Recreate also set rollingUpdate: null. strategy: null uses the Kubernetes default.
+  # maxSurge: 0 avoids adding a node just for a temporary pod, and 90% makes rollouts faster.
+  # This is not ideal for production.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 90%
   port: 1983
   secretRef:
   mqttPort: 1984
@@ -81,6 +90,8 @@ server:
 
 drain:
   replicaCount: 3
+  # Deployment strategy. Empty or null uses the Kubernetes default (RollingUpdate, 25% surge and unavailable).
+  strategy: {}
   secretRef:
   pullPolicy: Always
   securityContext:
@@ -132,6 +143,8 @@ scheduler:
   # example when a registry mirror rewrites tags or the build is not a release.
   enabled: null
   replicaCount: 3
+  # Deployment strategy. Empty or null uses the Kubernetes default (RollingUpdate, 25% surge and unavailable).
+  strategy: {}
   pullPolicy: Always
   securityContext:
     # TODO Make sure we can run the image as non root user
@@ -174,6 +187,13 @@ vcsGateway:
   # Format: hostname without protocol and port (e.g., "vcs-gateway.mycorp.com")
   domain: ""
   replicaCount: 3
+  # Deployment strategy. Helm merges this map with the defaults, so to switch to
+  # type: Recreate also set rollingUpdate: null. strategy: null uses the Kubernetes default.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 90%
   # Container ports
   externalPort: 1984 # gRPC port for remote VCS agents exposed via a load balancer
   internalPort: 1985 # HTTP port for internal usage from server/drain. not exposed, just used internally via for pod-to-pod communication.

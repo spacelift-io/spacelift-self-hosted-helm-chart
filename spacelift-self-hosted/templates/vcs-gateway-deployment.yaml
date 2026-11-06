@@ -7,11 +7,10 @@ metadata:
     {{- include "spacelift.vcsGatewayLabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.vcsGateway.replicaCount }}
+  {{- with .Values.vcsGateway.strategy }}
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 0
-      maxUnavailable: 90%
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "spacelift.vcsGatewaySelectorLabels" . | nindent 6 }}

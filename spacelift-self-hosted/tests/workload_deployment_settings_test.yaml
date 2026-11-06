@@ -43,3 +43,145 @@ tests:
     asserts:
       - notExists:
           path: spec.replicas
+
+  - it: keeps the rolling update strategy on the server and VCS Gateway by default
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 90%
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 90%
+
+  - it: leaves the strategy to Kubernetes on the drain and scheduler by default
+    asserts:
+      - template: drain-deployment.yaml
+        notExists:
+          path: spec.strategy
+      - template: scheduler-deployment.yaml
+        notExists:
+          path: spec.strategy
+
+  - it: sets a custom strategy on every workload
+    set:
+      server.strategy:
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 0
+      drain.strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: "50%"
+          maxUnavailable: "25%"
+      scheduler.strategy:
+        type: Recreate
+      vcsGateway.strategy:
+        rollingUpdate:
+          maxUnavailable: 1
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 1
+              maxUnavailable: 0
+      - template: drain-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 50%
+              maxUnavailable: 25%
+      - template: scheduler-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: Recreate
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 1
+
+  - it: renders only type Recreate when rollingUpdate is set to null
+    set:
+      server.strategy:
+        type: Recreate
+        rollingUpdate: null
+      vcsGateway.strategy:
+        type: Recreate
+        rollingUpdate: null
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: Recreate
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: Recreate
+
+  - it: leaves the strategy to Kubernetes when strategy is null
+    set:
+      server.strategy: null
+      vcsGateway.strategy: null
+    asserts:
+      - template: server-deployment.yaml
+        notExists:
+          path: spec.strategy
+      - template: vcs-gateway-deployment.yaml
+        notExists:
+          path: spec.strategy
+
+  - it: rejects type Recreate on the server while the default rollingUpdate is merged in
+    template: server-deployment.yaml
+    set:
+      server.strategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "/server/strategy/rollingUpdate': got object, want null"
+
+  - it: rejects type Recreate together with a rollingUpdate on the drain
+    template: drain-deployment.yaml
+    set:
+      drain.strategy:
+        type: Recreate
+        rollingUpdate:
+          maxSurge: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "/drain/strategy/rollingUpdate': got object, want null"
+
+  - it: rejects an unknown strategy type
+    template: server-deployment.yaml
+    set:
+      server.strategy.type: BlueGreen
+    asserts:
+      - failedTemplate:
+          errorPattern: "/server/strategy/type"
+
+  - it: rejects an unknown rollingUpdate field
+    template: drain-deployment.yaml
+    set:
+      drain.strategy.rollingUpdate.maxSurged: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "/drain/strategy/rollingUpdate"

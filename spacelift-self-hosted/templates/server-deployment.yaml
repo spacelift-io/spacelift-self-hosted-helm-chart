@@ -4,21 +4,16 @@ metadata:
   name: {{ include "spacelift.fullname" . }}-server
   labels:
     {{- include "spacelift.serverLabels" . | nindent 4 }}
+  {{- with .Values.server.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.server.replicaCount }}
+  {{- with .Values.server.strategy }}
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      # We wanted to avoid a situation where the deployment allocates an additional pod.
-      # The reason for that is that we wanted to avoid the cluster to have to spawn a new node
-      # just to be able to schedule temporary workload.
-      # Since we use autopilot, the control plane tendency is to allocate just what is required for running
-      # the actual workload, and thus there is a chance that increasing the maxSurge will trigger a new node to be spawned.
-      # The only thing I wanted to do here to speed up a bit the deployment is increase the number of pod that can
-      # be terminated at the same time. Because previously, it was 1.
-      # This is probably not the best for a production environment.
-      maxSurge: 0
-      maxUnavailable: 90%
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "spacelift.serverSelectorLabels" . | nindent 6 }}

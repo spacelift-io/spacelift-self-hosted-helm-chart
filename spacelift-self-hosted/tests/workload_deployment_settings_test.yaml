@@ -1,0 +1,264 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: workload deployment settings
+templates:
+  - server-deployment.yaml
+  - drain-deployment.yaml
+  - scheduler-deployment.yaml
+  - vcs-gateway-deployment.yaml
+set:
+  shared.launcherImage.enabled: true
+  scheduler.enabled: true
+  vcsGateway.enabled: true
+  vcsGateway.domain: vcs-gateway.example.com
+tests:
+  - it: renders 3 drain replicas by default
+    template: drain-deployment.yaml
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: sets the drain replicas
+    template: drain-deployment.yaml
+    set:
+      drain.replicaCount: 5
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 5
+
+  - it: keeps a drain replicaCount of 0
+    template: drain-deployment.yaml
+    set:
+      drain.replicaCount: 0
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 0
+
+  - it: leaves the drain replicas out when replicaCount is null
+    template: drain-deployment.yaml
+    set:
+      drain.replicaCount: null
+    asserts:
+      - notExists:
+          path: spec.replicas
+
+  - it: keeps the rolling update strategy on the server and VCS Gateway by default
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 90%
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 90%
+
+  - it: leaves the strategy to Kubernetes on the drain and scheduler by default
+    asserts:
+      - template: drain-deployment.yaml
+        notExists:
+          path: spec.strategy
+      - template: scheduler-deployment.yaml
+        notExists:
+          path: spec.strategy
+
+  - it: sets a custom strategy on every workload
+    set:
+      server.strategy:
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 0
+      drain.strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: "50%"
+          maxUnavailable: "25%"
+      scheduler.strategy:
+        type: Recreate
+      vcsGateway.strategy:
+        rollingUpdate:
+          maxUnavailable: 1
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 1
+              maxUnavailable: 0
+      - template: drain-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 50%
+              maxUnavailable: 25%
+      - template: scheduler-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: Recreate
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: RollingUpdate
+            rollingUpdate:
+              maxSurge: 0
+              maxUnavailable: 1
+
+  - it: renders only type Recreate when rollingUpdate is set to null
+    set:
+      server.strategy:
+        type: Recreate
+        rollingUpdate: null
+      vcsGateway.strategy:
+        type: Recreate
+        rollingUpdate: null
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: Recreate
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: spec.strategy
+          value:
+            type: Recreate
+
+  - it: leaves the strategy to Kubernetes when strategy is null
+    set:
+      server.strategy: null
+      vcsGateway.strategy: null
+    asserts:
+      - template: server-deployment.yaml
+        notExists:
+          path: spec.strategy
+      - template: vcs-gateway-deployment.yaml
+        notExists:
+          path: spec.strategy
+
+  - it: rejects type Recreate on the server while the default rollingUpdate is merged in
+    template: server-deployment.yaml
+    set:
+      server.strategy.type: Recreate
+    asserts:
+      - failedTemplate:
+          errorPattern: "/server/strategy/rollingUpdate': got object, want null"
+
+  - it: rejects type Recreate together with a rollingUpdate on the drain
+    template: drain-deployment.yaml
+    set:
+      drain.strategy:
+        type: Recreate
+        rollingUpdate:
+          maxSurge: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "/drain/strategy/rollingUpdate': got object, want null"
+
+  - it: rejects an unknown strategy type
+    template: server-deployment.yaml
+    set:
+      server.strategy.type: BlueGreen
+    asserts:
+      - failedTemplate:
+          errorPattern: "/server/strategy/type"
+
+  - it: rejects an unknown rollingUpdate field
+    template: drain-deployment.yaml
+    set:
+      drain.strategy.rollingUpdate.maxSurged: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "/drain/strategy/rollingUpdate"
+
+  - it: sets deployment annotations on every workload
+    set:
+      server.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: server-secret
+      drain.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: drain-secret
+      scheduler.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: scheduler-secret
+      vcsGateway.deploymentAnnotations:
+        secret.reloader.stakater.com/reload: vcs-gateway-secret
+    asserts:
+      - template: server-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: server-secret
+      - template: drain-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: drain-secret
+      - template: scheduler-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: scheduler-secret
+      - template: vcs-gateway-deployment.yaml
+        equal:
+          path: metadata.annotations
+          value:
+            secret.reloader.stakater.com/reload: vcs-gateway-secret
+
+  - it: sets no deployment annotations by default
+    asserts:
+      - notExists:
+          path: metadata.annotations
+
+  - it: keeps deployment annotations out of the pod template
+    set:
+      server.deploymentAnnotations:
+        example.com/deployment: "true"
+      drain.deploymentAnnotations:
+        example.com/deployment: "true"
+      scheduler.deploymentAnnotations:
+        example.com/deployment: "true"
+      vcsGateway.deploymentAnnotations:
+        example.com/deployment: "true"
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations
+
+  - it: keeps deployment and pod annotations apart
+    template: server-deployment.yaml
+    set:
+      server.deploymentAnnotations:
+        example.com/deployment: "true"
+      server.podAnnotations:
+        example.com/pod: "true"
+    asserts:
+      - equal:
+          path: metadata.annotations
+          value:
+            example.com/deployment: "true"
+      - equal:
+          path: spec.template.metadata.annotations
+          value:
+            example.com/pod: "true"
+
+  - it: rejects deployment annotations with a non-string value
+    template: server-deployment.yaml
+    set:
+      server.deploymentAnnotations:
+        example.com/count: 1
+    asserts:
+      - failedTemplate:
+          errorPattern: "/server/deploymentAnnotations/example.com~1count"

@@ -128,6 +128,9 @@
           "default": 3,
           "description": "Number of server replicas"
         },
+        "strategy": {
+          "$ref": "#/$defs/strategy"
+        },
         "port": {
           "$ref": "#/$defs/port",
           "default": 1983,
@@ -159,6 +162,9 @@
         },
         "podLabels": {
           "$ref": "#/$defs/labels"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
         },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"
@@ -208,6 +214,9 @@
           "default": 3,
           "description": "Number of drain replicas. Might be set to 'null' to enable external components to scale drain"
         },
+        "strategy": {
+          "$ref": "#/$defs/strategy"
+        },
         "secretRef": {
           "type": [
             "string",
@@ -229,6 +238,9 @@
         },
         "podLabels": {
           "$ref": "#/$defs/labels"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
         },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"
@@ -283,6 +295,9 @@
           "default": 3,
           "description": "Number of scheduler replicas"
         },
+        "strategy": {
+          "$ref": "#/$defs/strategy"
+        },
         "pullPolicy": {
           "$ref": "#/$defs/imagePullPolicy"
         },
@@ -297,6 +312,9 @@
         },
         "podLabels": {
           "$ref": "#/$defs/labels"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
         },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"
@@ -352,6 +370,9 @@
           "default": 3,
           "description": "Number of VCS Gateway replicas"
         },
+        "strategy": {
+          "$ref": "#/$defs/strategy"
+        },
         "externalPort": {
           "$ref": "#/$defs/port",
           "default": 1984,
@@ -377,6 +398,9 @@
         },
         "podLabels": {
           "$ref": "#/$defs/labels"
+        },
+        "deploymentAnnotations": {
+          "$ref": "#/$defs/annotations"
         },
         "podAnnotations": {
           "$ref": "#/$defs/annotations"
@@ -1009,6 +1033,66 @@
       ],
       "minimum": 0,
       "description": "Seconds Kubernetes waits for the pod to stop before it kills it. Null uses the Kubernetes default of 30, 0 kills the pod right away"
+    },
+    "strategy": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Deployment strategy. Null or an empty object uses the Kubernetes default. Helm merges this map with the chart defaults, so to switch to Recreate also set rollingUpdate to null",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "RollingUpdate",
+            "Recreate"
+          ],
+          "description": "How old pods are replaced by new ones"
+        },
+        "rollingUpdate": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Rolling update settings, only valid with type RollingUpdate",
+          "additionalProperties": false,
+          "properties": {
+            "maxSurge": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Pods allowed above the replica count during a rollout, a number or a percentage such as 25%"
+            },
+            "maxUnavailable": {
+              "type": [
+                "integer",
+                "string"
+              ],
+              "description": "Pods allowed to be unavailable during a rollout, a number or a percentage such as 25%"
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "type": {
+            "const": "Recreate"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "rollingUpdate": {
+            "type": "null",
+            "description": "Not allowed with type Recreate"
+          }
+        }
+      }
     },
     "annotations": {
       "type": [

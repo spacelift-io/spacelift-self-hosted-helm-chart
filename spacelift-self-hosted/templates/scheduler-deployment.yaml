@@ -5,8 +5,16 @@ metadata:
   name: {{ include "spacelift.fullname" . }}-scheduler
   labels:
     {{- include "spacelift.schedulerLabels" . | nindent 4 }}
+  {{- with .Values.scheduler.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.scheduler.replicaCount }}
+  {{- with .Values.scheduler.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "spacelift.schedulerSelectorLabels" . | nindent 6 }}

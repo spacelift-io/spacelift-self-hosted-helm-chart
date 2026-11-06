@@ -40,6 +40,15 @@ shared:
 
 server:
   replicaCount: 3
+  # Deployment strategy. Helm merges this map with the defaults, so to switch to
+  # type: Recreate also set rollingUpdate: null. strategy: null uses the Kubernetes default.
+  # maxSurge: 0 avoids adding a node just for a temporary pod, and 90% makes rollouts faster.
+  # This is not ideal for production.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 90%
   port: 1983
   secretRef:
   mqttPort: 1984
@@ -57,6 +66,8 @@ server:
       path: /readiness
       port: instrumentation
   podLabels: {}
+  # Annotations added to the server Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the server pods.
   podAnnotations: {}
   podSecurityContext: {}
@@ -81,6 +92,8 @@ server:
 
 drain:
   replicaCount: 3
+  # Deployment strategy. Empty or null uses the Kubernetes default (RollingUpdate, 25% surge and unavailable).
+  strategy: {}
   secretRef:
   pullPolicy: Always
   securityContext:
@@ -96,6 +109,8 @@ drain:
       path: /startup
       port: instrumentation
   podLabels: {}
+  # Annotations added to the drain Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the drain pods.
   podAnnotations: {}
   podSecurityContext: {}
@@ -132,6 +147,8 @@ scheduler:
   # example when a registry mirror rewrites tags or the build is not a release.
   enabled: null
   replicaCount: 3
+  # Deployment strategy. Empty or null uses the Kubernetes default (RollingUpdate, 25% surge and unavailable).
+  strategy: {}
   pullPolicy: Always
   securityContext:
     # TODO Make sure we can run the image as non root user
@@ -146,6 +163,8 @@ scheduler:
       path: /startup
       port: instrumentation
   podLabels: {}
+  # Annotations added to the scheduler Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the scheduler pods.
   podAnnotations: {}
   podSecurityContext: {}
@@ -174,6 +193,13 @@ vcsGateway:
   # Format: hostname without protocol and port (e.g., "vcs-gateway.mycorp.com")
   domain: ""
   replicaCount: 3
+  # Deployment strategy. Helm merges this map with the defaults, so to switch to
+  # type: Recreate also set rollingUpdate: null. strategy: null uses the Kubernetes default.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 90%
   # Container ports
   externalPort: 1984 # gRPC port for remote VCS agents exposed via a load balancer
   internalPort: 1985 # HTTP port for internal usage from server/drain. not exposed, just used internally via for pod-to-pod communication.
@@ -187,6 +213,8 @@ vcsGateway:
       cpu: "100m"
     limits: {}
   podLabels: {}
+  # Annotations added to the VCS Gateway Deployment, for example for Reloader.
+  deploymentAnnotations: {}
   # Annotations added to the VCS Gateway pods.
   podAnnotations: {}
   podSecurityContext: {}

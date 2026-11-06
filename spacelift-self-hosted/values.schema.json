@@ -558,10 +558,6 @@
         },
         "annotations": {
           "$ref": "#/$defs/annotations"
-        },
-        "additionalSpec": {
-          "type": "object",
-          "description": "Additional service spec fields"
         }
       }
     },

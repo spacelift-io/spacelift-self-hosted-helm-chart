@@ -23,10 +23,6 @@ tests:
           value: server
       - exists:
           path: spec.selector
-      - notExists:
-          path: spec.externalTrafficPolicy
-      - notExists:
-          path: spec.loadBalancerSourceRanges
 
   - it: renders annotations when set
     set:
@@ -53,50 +49,3 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: "at '/service/annotations': got string, want"
-
-  - it: adds additionalSpec fields to the Service spec
-    set:
-      service.additionalSpec:
-        externalTrafficPolicy: Local
-        loadBalancerSourceRanges:
-          - 10.0.0.0/8
-    asserts:
-      - equal:
-          path: spec.externalTrafficPolicy
-          value: Local
-      - equal:
-          path: spec.loadBalancerSourceRanges
-          value:
-            - 10.0.0.0/8
-      - equal:
-          path: spec.type
-          value: ClusterIP
-      - equal:
-          path: spec.ports[0].port
-          value: 80
-      - exists:
-          path: spec.selector
-
-  - it: keeps type and port when additionalSpec is set
-    set:
-      service.type: LoadBalancer
-      service.port: 8080
-      service.additionalSpec:
-        externalTrafficPolicy: Local
-    asserts:
-      - equal:
-          path: spec.type
-          value: LoadBalancer
-      - equal:
-          path: spec.ports[0].port
-          value: 8080
-      - equal:
-          path: spec.externalTrafficPolicy
-          value: Local
-
-  - it: rejects additionalSpec given as a string
-    set:
-      service.additionalSpec: not-a-map
-    asserts:
-      - failedTemplate:
-          errorPattern: "at '/service/additionalSpec': got string, want object"

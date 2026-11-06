@@ -254,12 +254,6 @@ service:
   port: 80
   # Annotations added to the server Service, for example cloud.google.com/neg on GKE.
   annotations: {}
-  # Extra fields added to the Service spec. Do not set type, ports or
-  # selector here, the chart sets them. For example:
-  #  additionalSpec:
-  #    loadBalancerSourceRanges:
-  #      - 10.0.0.0/8
-  additionalSpec: {}
 
 mqttService:
   enabled: true

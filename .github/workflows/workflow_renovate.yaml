@@ -35,3 +35,8 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_SECRETS: >-
+            {
+              "OCI_SPACELIFT_USERNAME": ${{ toJSON(secrets.OCI_SPACELIFT_USERNAME) }},
+              "OCI_SPACELIFT_PASSWORD": ${{ toJSON(secrets.OCI_SPACELIFT_PASSWORD) }}
+            }

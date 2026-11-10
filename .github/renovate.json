@@ -3,6 +3,14 @@
   "extends": ["config:recommended"],
   "semanticCommits": "enabled",
   "dependencyDashboard": false,
+  "hostRules": [
+    {
+      "hostType": "docker",
+      "matchHost": "oci.spacelift.io",
+      "username": "{{ secrets.OCI_SPACELIFT_USERNAME }}",
+      "password": "{{ secrets.OCI_SPACELIFT_PASSWORD }}"
+    }
+  ],
   "packageRules": [
     {
       "matchManagers": ["github-actions"],
@@ -16,6 +24,22 @@
     {
       "matchDepNames": ["helmunittest/helm-unittest"],
       "versioning": "loose"
+    },
+    {
+      "description": "Each bump releases a new chart version, so only take stable vX.Y.Z tags",
+      "matchDepNames": ["oci.spacelift.io/deploy/backend"],
+      "versioning": "semver",
+      "allowedVersions": "/^v?\\d+\\.\\d+\\.\\d+$/",
+      "commitMessageTopic": "Spacelift Self-Hosted",
+      "commitMessageExtra": "to v{{newMajor}}.{{newMinor}}.{{newPatch}}",
+      "semanticCommitType": "feat",
+      "semanticCommitScope": "release"
+    },
+    {
+      "description": "The chart version is the same Self-Hosted version without the v",
+      "matchDepNames": ["oci.spacelift.io/deploy/backend"],
+      "matchCurrentValue": "/^\\d/",
+      "extractVersion": "^v(?<version>\\d+\\.\\d+\\.\\d+)$"
     }
   ],
   "customManagers": [
@@ -23,7 +47,8 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/^\\.github/workflows/.*\\.ya?ml$/",
-        "/(^|/)Makefile$/"
+        "/(^|/)Makefile$/",
+        "/(^|/)Chart\\.yaml$/"
       ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+\\s*:=?\\s*\"?(?<currentValue>[^\"\\s]+)\"?"

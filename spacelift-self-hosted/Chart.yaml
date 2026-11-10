@@ -2,5 +2,8 @@ apiVersion: v2
 name: spacelift-self-hosted
 description: A Helm chart for deploying spacelift self-hosted
 type: application
-version: 0.0.0 # Overridden at publish time
-appVersion: "0.0.0" # Overridden at publish time
+
+# renovate: datasource=docker depName=oci.spacelift.io/deploy/backend
+version: 7.1.0
+# renovate: datasource=docker depName=oci.spacelift.io/deploy/backend
+appVersion: "v7.1.0"

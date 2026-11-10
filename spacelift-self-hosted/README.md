@@ -1,6 +1,6 @@
 # Helm chart spacelift-self-hosted
 
-This chart allows to deploy an instance of Spacelift in a self-hosted environment.
+This chart deploys Spacelift Self-Hosted on Kubernetes.
 
 > [!NOTE]
 > From Spacelift v6.4.0 on, the drain runs the cron scheduler itself and this chart
@@ -46,5 +46,5 @@ Point `shared.launcherImage` at the image from your secrets, or keep
 
 ## Quick Start
 
-Depending on your environment, you can check the [guides here](https://docs.spacelift.io/self-hosted/latest/installing-spacelift/reference-architecture/guides) 
+Depending on your environment, you can check the [guides here](https://docs.spacelift.io/self-hosted/latest/installing-spacelift/reference-architecture/guides)
 for more details about how to use this chart.

@@ -1,0 +1,68 @@
+name: 🏷️ Tag chart release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - spacelift-self-hosted/Chart.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: chart-tag
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    name: Tag when appVersion changes
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v7
+
+      - name: Read chart version
+        id: version
+        run: |
+          set -euo pipefail
+
+          version="$(yq '.version' spacelift-self-hosted/Chart.yaml)"
+          app_version="$(yq '.appVersion' spacelift-self-hosted/Chart.yaml)"
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Chart version '$version' isn't an X.Y.Z release"
+            exit 1
+          fi
+          if [[ "$app_version" != "v$version" ]]; then
+            echo "::error::appVersion '$app_version' doesn't match the chart version '$version'"
+            exit 1
+          fi
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.SELFHOSTED_CHART_APP_ID }}
+          private-key: ${{ secrets.SELFHOSTED_CHART_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
+      - name: Create tag
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "${TAG} already exists, nothing to release"
+            exit 0
+          fi
+
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="refs/tags/${TAG}" -f sha="${GITHUB_SHA}" >/dev/null
+          echo "Tagged ${GITHUB_SHA} as ${TAG}"

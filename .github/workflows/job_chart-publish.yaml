@@ -93,19 +93,23 @@ jobs:
           STRATEGY: ${{ inputs.chart_version_strategy }}
           PREFIX: ${{ inputs.chart_version_prefix }}
         run: |
+          set -euo pipefail
+
+          # Production ships Chart.yaml as is. Preprod gets a unique version on every push.
           if [[ "$STRATEGY" == "tag" ]]; then
-            version="${GITHUB_REF_NAME#v}"
+            version="$(yq '.version' "$CHART/Chart.yaml")"
+            if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
+              echo "::error::Tag $GITHUB_REF_NAME doesn't match the chart version $version"
+              exit 1
+            fi
           else
             version="${PREFIX}.$(date +'%s')"
           fi
           echo "CHART_VERSION=$version" >> "$GITHUB_ENV"
-          # Chart versions follow Spacelift versions. The chart version has no
-          # "v" prefix, the app version matches the Spacelift image tag, which has one.
-          echo "APP_VERSION=v$version" >> "$GITHUB_ENV"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Package chart
-        run: helm package --version "$CHART_VERSION" --app-version "$APP_VERSION" --destination build/chart "$CHART/"
+        run: helm package --version "$CHART_VERSION" --destination build/chart "$CHART/"
 
       - name: Push chart to S3
         run: helm s3 push --force --relative "build/chart/${CHART}-${CHART_VERSION}.tgz" spacelift

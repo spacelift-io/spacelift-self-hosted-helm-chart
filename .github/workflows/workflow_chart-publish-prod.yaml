@@ -49,19 +49,38 @@ jobs:
         run: |
           set -euo pipefail
 
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, skipping"
+            exit 0
+          fi
+
           VERSION="${TAG#v}"
 
           cat > notes.md <<NOTES
-          ## Artifacts
-          ### Helm chart
-
-          The chart is published to \`https://downloads.spacelift.io/helm\`:
+          ## 📦 New install
 
           \`\`\`sh
           helm repo add spacelift https://downloads.spacelift.io/helm
           helm repo update
-          helm upgrade spacelift spacelift/spacelift-self-hosted --install --version $VERSION --values values.yaml
+          helm show values spacelift/spacelift-self-hosted --version ${VERSION} > values.yaml
+          # Edit values.yaml for your environment
+          helm install spacelift spacelift/spacelift-self-hosted --version ${VERSION} --values values.yaml
           \`\`\`
+
+          ## ⬆️ Upgrade
+
+          \`\`\`sh
+          helm repo update
+          helm upgrade spacelift spacelift/spacelift-self-hosted --version ${VERSION} --values values.yaml
+          \`\`\`
+
+          ## 🖼️ Default images
+
+          | Component | Image |
+          | --- | --- |
+          | Backend | \`oci.spacelift.io/deploy/backend:${TAG}\` |
+          | Launcher | \`oci.spacelift.io/deploy/launcher:${TAG}\` |
+
           NOTES
 
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \

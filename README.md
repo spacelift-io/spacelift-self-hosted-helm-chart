@@ -8,7 +8,7 @@ Helm chart for running [Spacelift Self-Hosted](https://docs.spacelift.io/self-ho
 
 ## ✨ Usage
 
-Chart versions follow Spacelift versions, so chart `7.2.0` installs Spacelift `7.2.0`.
+Chart versions follow Spacelift Self-Hosted versions.
 
 The chart needs some infrastructure to exist first (database, object storage, message queue and so on), so start with the [reference architecture guides](https://docs.spacelift.io/self-hosted/latest/installing-spacelift/reference-architecture/guides). They cover each supported cloud and show the values you'll need.
 
@@ -68,4 +68,6 @@ Contributions are welcome. A few tips:
 
 Every push to `main` publishes a preprod version of the chart to `downloads.spacelift.dev/helm`.
 
-To release to production, push a tag in the `v<version>` format, for example `v7.2.0`. The publish workflow picks it up and releases the chart to `downloads.spacelift.io/helm`.
+Production releases follow Spacelift Self-Hosted versions. In `Chart.yaml`, `version` is the Self-Hosted version and `appVersion` is the matching image tag, which has a `v` prefix. Renovate bumps both together when a new backend image lands on `oci.spacelift.io`. When a bump reaches `main`, the commit is tagged `v<version>`, which publishes the chart to `downloads.spacelift.io/helm` exactly as it is in `Chart.yaml`.
+
+To release by hand, bump both `version` and `appVersion` in a PR and merge it. Don't push a tag on its own: the publish fails if the tag doesn't match `Chart.yaml`.

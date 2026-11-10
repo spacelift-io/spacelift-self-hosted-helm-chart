@@ -531,8 +531,7 @@
         },
         "image": {
           "type": "string",
-          "default": "gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.21.0",
-          "description": "Cloud SQL Proxy container image"
+          "description": "Cloud SQL Proxy container image. The default version is set in values.yaml and kept up to date by Renovate"
         },
         "dbConnectionName": {
           "type": [

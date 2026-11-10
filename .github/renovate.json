@@ -3,8 +3,6 @@
   "extends": ["config:recommended"],
   "semanticCommits": "enabled",
   "dependencyDashboard": false,
-  "automerge": true,
-  "platformAutomerge": false,
   "packageRules": [
     {
       "matchManagers": ["github-actions"],

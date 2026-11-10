@@ -1,4 +1,4 @@
-name: ✅ Auto-approve
+name: ✅ Auto-approve and merge
 
 on:
   pull_request_target:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   auto-approve:
-    name: Auto-approve Renovate PR
+    name: Auto-approve and merge Renovate PR
     runs-on: ubuntu-latest
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
@@ -25,15 +25,17 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-pull-requests: write
+          permission-contents: write
 
-      - name: Approve
+      - name: Approve and enable auto-merge
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          if [ "$(gh pr view "$PR_URL" --json reviewDecision --jq .reviewDecision)" = "APPROVED" ]; then
-            echo "PR is already approved, skipping"
-            exit 0
+          set -euo pipefail
+
+          if [ "$(gh pr view "$PR_URL" --json reviewDecision --jq .reviewDecision)" != "APPROVED" ]; then
+            gh pr review "$PR_URL" --approve
           fi
 
-          gh pr review "$PR_URL" --approve
+          gh pr merge "$PR_URL" --auto --squash

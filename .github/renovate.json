@@ -3,14 +3,6 @@
   "extends": ["config:recommended"],
   "semanticCommits": "enabled",
   "dependencyDashboard": false,
-  "hostRules": [
-    {
-      "hostType": "docker",
-      "matchHost": "oci.spacelift.io",
-      "username": "{{ secrets.OCI_SPACELIFT_USERNAME }}",
-      "password": "{{ secrets.OCI_SPACELIFT_PASSWORD }}"
-    }
-  ],
   "packageRules": [
     {
       "matchManagers": ["github-actions"],

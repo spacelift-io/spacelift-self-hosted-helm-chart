@@ -35,8 +35,10 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
-          RENOVATE_SECRETS: >-
-            {
-              "OCI_SPACELIFT_USERNAME": ${{ toJSON(secrets.OCI_SPACELIFT_USERNAME) }},
-              "OCI_SPACELIFT_PASSWORD": ${{ toJSON(secrets.OCI_SPACELIFT_PASSWORD) }}
-            }
+          RENOVATE_HOST_RULES: >-
+            [{
+              "hostType": "docker",
+              "matchHost": "oci.spacelift.io",
+              "username": ${{ toJSON(secrets.OCI_SPACELIFT_USERNAME) }},
+              "password": ${{ toJSON(secrets.OCI_SPACELIFT_PASSWORD) }}
+            }]

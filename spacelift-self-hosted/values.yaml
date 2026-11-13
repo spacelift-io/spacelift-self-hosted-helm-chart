@@ -1,9 +1,20 @@
 shared:
   secretRef:
+
+  # Secrets with registry credentials for the server, drain, scheduler and
+  # VCS Gateway images. Strongly recommended starting with Spacelift v8.0.0.
+  # The secrets must exist in the release namespace.
+  # Launcher image pull credentials are configured separately on the Worker Controller side.
+  # For example:
+  #  imagePullSecrets:
+  #    - name: spacelift-registry
+  imagePullSecrets: []
+
   # Deprecated: use shared.backendImage instead. A full image reference, for
   # example my-registry.example.com/spacelift/backend:v7.0.0. When set, it is
   # used as it is and shared.backendImage is ignored.
   image:
+
   backendImage:
     # Registry host, optionally with a path prefix (my-registry.example.com/mirror).
     registry: oci.spacelift.io
@@ -16,12 +27,16 @@ shared:
     digest: ""
     # Use the FIPS 140 build of the image, <repository>-fips.
     fips: false
-  # The launcher image that Kubernetes workers run. When enabled, the chart sets
-  # LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG on the server and drain.
-  # These win over the same keys in the secrets from secretRef.
-  # Leave it disabled only together with shared.image, when the secrets set both
-  # keys. Otherwise the chart fails to render.
+
   launcherImage:
+    # Default launcher image for Kubernetes workers.
+    #
+    # Set enabled to true to configure the image here. These values override
+    # LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG from the Secret in shared.secretRef.
+    #
+    # Leave enabled false only if you use the deprecated shared.image and
+    # your Secret provides both env vars. The chart requires enabled: true
+    # when shared.image is not set.
     enabled: false
     registry: oci.spacelift.io
     repository: deploy/launcher
@@ -29,13 +44,7 @@ shared:
     tag: ""
     # Use the FIPS 140 build of the image, <repository>-fips.
     fips: false
-  # Secrets with credentials to pull the backend image from a private registry, for
-  # example oci.spacelift.io. The secrets must exist in the release namespace.
-  # They are set on the server, drain, scheduler and VCS Gateway pods.
-  # For example:
-  #  imagePullSecrets:
-  #    - name: spacelift-registry
-  imagePullSecrets: []
+
   serverHostname:
 
 server:

@@ -693,6 +693,10 @@
       "items": {
         "type": "object"
       }
+    },
+    "global": {
+      "type": "object",
+      "description": "Values that Helm passes to every chart when this chart is a dependency of another chart. This chart doesn't use them."
     }
   },
   "$defs": {

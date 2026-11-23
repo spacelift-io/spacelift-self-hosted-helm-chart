@@ -1,8 +1,8 @@
 shared:
   secretRef:
 
-  # Secrets with registry credentials for the server, drain, scheduler and
-  # VCS Gateway images. Strongly recommended starting with Spacelift v8.0.0.
+  # Secrets with registry credentials for the server, drain, scheduler,
+  # VCS Gateway and Flows images. Strongly recommended starting with Spacelift v8.0.0.
   # The secrets must exist in the release namespace.
   # Launcher image pull credentials are configured separately on the Worker Controller side.
   # For example:
@@ -351,6 +351,114 @@ ingressV6:
     nginx.ingress.kubernetes.io/proxy-body-size: "0"
   extraPaths: []
   extraRules: []
+
+# Spacelift Flows: the server, worker and gateway. Everything below is ignored
+# while enabled is false.
+flows:
+  enabled: false
+  # Domain Flows is served on, without protocol and port (e.g., "flows.mycorp.com").
+  # The Ingress also routes the endpoints, mcp and oauth subdomains of it.
+  appDomain: ""
+  # Name of the Secret that holds the Flows config.yaml. It is mounted into the
+  # server, worker and gateway pods, and must exist in the release namespace.
+  secretName: spacelift-flows-secret
+
+  global:
+    image:
+      repository: oci.spacelift.io/flows/backend
+      pullPolicy: IfNotPresent
+      # Defaults to the chart appVersion.
+      tag: ""
+
+  # Flows gets its own service account. When create is false, the pods use the
+  # service account in name, or "default" when name is empty.
+  serviceAccount:
+    create: true
+    name: "spacelift-flows"
+    annotations: {}
+
+  server:
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8080
+      targetPort: 8080
+      annotations: {}
+    resources:
+      limits:
+        cpu: 512m
+        memory: 1024Mi
+      requests:
+        cpu: 512m
+        memory: 1024Mi
+    # Extra environment variables for the server container. For example:
+    #  extraEnv:
+    #    - name: DATABASE_URL
+    #      valueFrom:
+    #        secretKeyRef:
+    #          name: my-db-secret
+    #          key: url
+    extraEnv: []
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    lifecycle: {}
+
+  worker:
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2048Mi
+      requests:
+        cpu: 1000m
+        memory: 2048Mi
+    extraEnv: []
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  gateway:
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      ports:
+        http: 3000
+        grpc: 6237
+        public: 8080
+      annotations: {}
+    resources:
+      limits:
+        cpu: 512m
+        memory: 1024Mi
+      requests:
+        cpu: 512m
+        memory: 1024Mi
+    extraEnv: []
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+
+  ingress:
+    enabled: true
+    # Sets spec.ingressClassName on the Flows Ingress. Required.
+    className: ""
+    annotations: {}
+      # For AWS ALB:
+      # alb.ingress.kubernetes.io/scheme: internet-facing
+      # alb.ingress.kubernetes.io/target-type: ip
+      # alb.ingress.kubernetes.io/healthcheck-path: /health
+    # Also route gateway.<domain> to the gateway, for agents that run outside the cluster.
+    exposeGateway: false
 
 # Additional Kubernetes manifests to render with the chart. Items are rendered through
 # the template engine, so Helm template functions and values references are supported.

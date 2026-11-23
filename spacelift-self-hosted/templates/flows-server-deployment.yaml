@@ -1,0 +1,84 @@
+{{- if .Values.flows.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spacelift.fullname" . }}-flows-server
+  labels:
+    {{- include "spacelift.flowsLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+spec:
+  replicas: {{ .Values.flows.server.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spacelift.flowsSelectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      {{- with .Values.flows.server.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "spacelift.flowsSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server
+    spec:
+      {{- with .Values.shared.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "spacelift.flowsServiceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.flows.server.podSecurityContext | nindent 8 }}
+      containers:
+        - name: server
+          securityContext:
+            {{- toYaml .Values.flows.server.securityContext | nindent 12 }}
+          image: "{{ include "spacelift.flowsImage" . }}"
+          imagePullPolicy: {{ .Values.flows.global.image.pullPolicy }}
+          command:
+            - /usr/bin/spacelift-flows
+          args:
+            - server
+          ports:
+            - name: public
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: CONFIG_FILE
+              value: /etc/flows/config.yaml
+            {{- with .Values.flows.server.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/flows
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: public
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.flows.server.resources | nindent 12 }}
+          {{- with .Values.flows.server.lifecycle }}
+          lifecycle:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ .Values.flows.secretName }}
+      {{- with .Values.flows.server.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.flows.server.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.flows.server.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

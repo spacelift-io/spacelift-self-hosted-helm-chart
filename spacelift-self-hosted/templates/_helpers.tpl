@@ -345,3 +345,53 @@ Validates PodDisruptionBudget configuration
 {{- fail "pdb.enabled is true but neither pdb.minAvailable nor pdb.maxUnavailable is set; set exactly one" }}
 {{- end }}
 {{- end }}
+
+{{/*
+Expand the name of Flows.
+*/}}
+{{- define "spacelift.flowsName" -}}
+{{- printf "%s-flows" (default .Chart.Name .Values.nameOverride) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Flows labels. The server, worker and gateway share them, and each adds its own
+app.kubernetes.io/component.
+*/}}
+{{- define "spacelift.flowsLabels" -}}
+helm.sh/chart: {{ include "spacelift.chart" . }}
+{{ include "spacelift.flowsSelectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Flows Selector labels
+*/}}
+{{- define "spacelift.flowsSelectorLabels" -}}
+app.kubernetes.io/name: {{ include "spacelift.flowsName" . }}
+app.kubernetes.io/instance: {{ printf "%s-flows" .Release.Name }}
+{{- end }}
+
+{{/*
+Create the name of the service account to use for Flows. It never falls back to
+the service account of the Spacelift backend, so Flows does not get its
+permissions.
+*/}}
+{{- define "spacelift.flowsServiceAccountName" -}}
+{{- if .Values.flows.serviceAccount.create }}
+{{- default (printf "%s-flows" (include "spacelift.fullname" .)) .Values.flows.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.flows.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+The Flows backend image from .Values.flows.global.image. The tag defaults to the
+chart appVersion, because Flows is released together with Spacelift.
+*/}}
+{{- define "spacelift.flowsImage" -}}
+	{{- $image := .Values.flows.global.image -}}
+	{{- printf "%s:%s" $image.repository ($image.tag | default .Chart.AppVersion) -}}
+{{- end -}}

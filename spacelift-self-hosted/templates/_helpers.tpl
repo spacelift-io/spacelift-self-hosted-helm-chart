@@ -350,7 +350,7 @@ Validates PodDisruptionBudget configuration
 Expand the name of Flows.
 */}}
 {{- define "spacelift.flowsName" -}}
-{{- printf "%s-flows" (default .Values.nameOverride .Chart.Name) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-flows" (default .Chart.Name .Values.nameOverride) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*

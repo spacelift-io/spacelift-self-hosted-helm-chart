@@ -231,6 +231,28 @@ tests:
             app.kubernetes.io/component: worker
         template: flows-worker-deployment.yaml
 
+  - it: follows nameOverride in its labels and selectors
+    set:
+      flows.enabled: true
+      nameOverride: custom
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: custom-flows
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: custom-flows
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: custom-flows
+        template: flows-server-service.yaml
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: custom-flows
+        template: flows-ingress.yaml
+
   - it: passes workload settings through
     template: flows-server-deployment.yaml
     set:

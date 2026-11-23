@@ -5,6 +5,18 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "deploy": {
+      "type": "object",
+      "description": "Controls whether Spacelift itself is deployed",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Deploy the Spacelift server, drain, VCS Gateway and their Services, Ingresses and service accounts. Set to false only to run Flows on its own"
+        }
+      }
+    },
     "shared": {
       "type": "object",
       "description": "Shared configuration across all components",

@@ -1,0 +1,139 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: deploy.enabled switch
+templates:
+  - drain-deployment.yaml
+  - drain-pdb.yaml
+  - drain-serviceaccount.yaml
+  - mqtt-service.yaml
+  - scheduler-deployment.yaml
+  - scheduler-pdb.yaml
+  - scheduler-serviceaccount.yaml
+  - server-deployment.yaml
+  - server-ingress-v6.yaml
+  - server-ingress.yaml
+  - server-pdb.yaml
+  - server-serviceaccount.yaml
+  - service.yaml
+  - serviceaccount.yaml
+  - vcs-gateway-deployment.yaml
+  - vcs-gateway-gateway.yaml
+  - vcs-gateway-httproute.yaml
+  - vcs-gateway-ingress.yaml
+  - vcs-gateway-pdb.yaml
+  - vcs-gateway-service.yaml
+  - vcs-gateway-serviceaccount.yaml
+  - flows-server-deployment.yaml
+  - validate.yaml
+set:
+  shared.launcherImage.enabled: true
+tests:
+  - it: deploys Spacelift by default
+    asserts:
+      - isKind:
+          of: Deployment
+        template: server-deployment.yaml
+      - isKind:
+          of: Deployment
+        template: drain-deployment.yaml
+      - isKind:
+          of: Service
+        template: service.yaml
+
+  - it: renders nothing of Spacelift when deploy is disabled, whatever else is set
+    set:
+      deploy.enabled: false
+      flows.enabled: true
+      flows.domain: flows.example.com
+      shared.launcherImage.enabled: false
+      scheduler.enabled: true
+      scheduler.pdb.enabled: true
+      scheduler.pdb.minAvailable: 1
+      scheduler.serviceAccount.create: true
+      server.pdb.enabled: true
+      server.pdb.minAvailable: 1
+      server.serviceAccount.create: true
+      drain.pdb.enabled: true
+      drain.pdb.minAvailable: 1
+      drain.serviceAccount.create: true
+      vcsGateway.enabled: true
+      vcsGateway.domain: vcs-gateway.example.com
+      vcsGateway.serviceAccount.create: true
+      vcsGateway.gateway.enabled: true
+      vcsGateway.gateway.gatewayClassName: example-gateway-class
+      vcsGateway.pdb.enabled: true
+      vcsGateway.pdb.minAvailable: 1
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: drain-deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: drain-pdb.yaml
+      - hasDocuments:
+          count: 0
+        template: drain-serviceaccount.yaml
+      - hasDocuments:
+          count: 0
+        template: mqtt-service.yaml
+      - hasDocuments:
+          count: 0
+        template: scheduler-deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: scheduler-pdb.yaml
+      - hasDocuments:
+          count: 0
+        template: scheduler-serviceaccount.yaml
+      - hasDocuments:
+          count: 0
+        template: server-deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: server-ingress-v6.yaml
+      - hasDocuments:
+          count: 0
+        template: server-ingress.yaml
+      - hasDocuments:
+          count: 0
+        template: server-pdb.yaml
+      - hasDocuments:
+          count: 0
+        template: server-serviceaccount.yaml
+      - hasDocuments:
+          count: 0
+        template: service.yaml
+      - hasDocuments:
+          count: 0
+        template: serviceaccount.yaml
+      - hasDocuments:
+          count: 0
+        template: vcs-gateway-deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: vcs-gateway-gateway.yaml
+      - hasDocuments:
+          count: 0
+        template: vcs-gateway-httproute.yaml
+      - hasDocuments:
+          count: 0
+        template: vcs-gateway-ingress.yaml
+      - hasDocuments:
+          count: 0
+        template: vcs-gateway-pdb.yaml
+      - hasDocuments:
+          count: 0
+        template: vcs-gateway-service.yaml
+      - hasDocuments:
+          count: 0
+        template: vcs-gateway-serviceaccount.yaml
+      - isKind:
+          of: Deployment
+        template: flows-server-deployment.yaml
+
+  - it: refuses to install nothing
+    set:
+      deploy.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: deploy.enabled and flows.enabled are both false, so the chart would install nothing
+        template: validate.yaml

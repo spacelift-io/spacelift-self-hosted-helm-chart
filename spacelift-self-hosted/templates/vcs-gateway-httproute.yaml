@@ -1,4 +1,4 @@
-{{- if and .Values.vcsGateway.enabled .Values.vcsGateway.gateway.enabled -}}
+{{- if and .Values.deploy.enabled .Values.vcsGateway.enabled .Values.vcsGateway.gateway.enabled -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:

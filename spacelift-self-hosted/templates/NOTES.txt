@@ -1,3 +1,4 @@
+{{- if .Values.deploy.enabled }}
 {{- if .Values.ingress.enabled }}
 1. Get the application URL by running this command:
 
@@ -54,5 +55,6 @@ LAUNCHER_IMAGE_TAG in your secrets. Otherwise the chart fails to render.
 A future major release will remove shared.launcherImage.enabled and always set
 LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG from shared.launcherImage, so the keys in
 your secrets will have no effect.
+{{- end }}
 {{- end }}
 {{- end }}

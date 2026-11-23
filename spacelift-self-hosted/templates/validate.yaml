@@ -1,0 +1,3 @@
+{{- if not (or .Values.deploy.enabled .Values.flows.enabled) }}
+{{- fail "deploy.enabled and flows.enabled are both false, so the chart would install nothing" }}
+{{- end }}

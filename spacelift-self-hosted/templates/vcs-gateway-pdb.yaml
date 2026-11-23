@@ -1,4 +1,4 @@
-{{- if .Values.vcsGateway.enabled }}
+{{- if and .Values.deploy.enabled .Values.vcsGateway.enabled }}
 {{- with .Values.vcsGateway.pdb }}
 {{- if .enabled }}
 {{ include "spacelift.validatePodDisruptionBudget" . }}

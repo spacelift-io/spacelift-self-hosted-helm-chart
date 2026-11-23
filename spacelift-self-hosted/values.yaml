@@ -1,3 +1,7 @@
+# Set to false to deploy Flows without Spacelift.
+deploy:
+  enabled: true
+
 shared:
   secretRef:
 

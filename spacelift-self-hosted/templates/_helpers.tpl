@@ -288,11 +288,13 @@ it on an application that does not schedule on its own would silently stop all
 recurring work.
 */}}
 {{- define "spacelift.deployStandaloneScheduler" -}}
+{{- if .Values.deploy.enabled -}}
 {{- if not (kindIs "invalid" .Values.scheduler.enabled) -}}
 {{- if .Values.scheduler.enabled -}}true{{- end -}}
 {{- else -}}
 {{- $core := include "spacelift.appVersionCore" . -}}
 {{- if or (not $core) (semverCompare "<6.4.0" $core) -}}true{{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 

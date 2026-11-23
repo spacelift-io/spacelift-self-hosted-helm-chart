@@ -1,4 +1,4 @@
-{{- if .Values.mqttService.enabled -}}
+{{- if and .Values.deploy.enabled .Values.mqttService.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:

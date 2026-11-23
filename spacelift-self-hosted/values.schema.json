@@ -696,7 +696,7 @@
           "default": false,
           "description": "Deploy Spacelift Flows"
         },
-        "appDomain": {
+        "domain": {
           "type": "string",
           "description": "Domain Flows is served on (required when the Flows ingress is enabled). Format: hostname without protocol and port"
         },
@@ -706,59 +706,46 @@
           "default": "spacelift-flows-secret",
           "description": "Name of the Secret that holds the Flows config.yaml, mounted into the server, worker and gateway pods"
         },
-        "global": {
+        "image": {
           "type": "object",
-          "description": "Settings shared by the Flows server, worker and gateway",
+          "description": "The Flows backend image, used by the server, worker and gateway. Rendered as <registry>/<repository>:<tag>, or as <registry>/<repository>@<digest> when digest is set.",
           "additionalProperties": false,
           "properties": {
-            "image": {
-              "type": "object",
-              "description": "The Flows backend image, rendered as <repository>:<tag>",
-              "additionalProperties": false,
-              "properties": {
-                "repository": {
-                  "type": "string",
-                  "minLength": 1,
-                  "default": "oci.spacelift.io/flows/backend",
-                  "description": "Image repository, including the registry"
-                },
-                "pullPolicy": {
-                  "type": "string",
-                  "enum": [
-                    "Always",
-                    "IfNotPresent",
-                    "Never"
-                  ],
-                  "default": "IfNotPresent",
-                  "description": "Image pull policy of the Flows containers"
-                },
-                "tag": {
-                  "type": "string",
-                  "default": "",
-                  "description": "Image tag. Defaults to the chart appVersion when empty"
-                }
-              }
+            "registry": {
+              "type": "string",
+              "default": "oci.spacelift.io",
+              "description": "Registry host, optionally with a path prefix. Leave empty to use the repository as it is."
+            },
+            "repository": {
+              "type": "string",
+              "minLength": 1,
+              "default": "flows/backend",
+              "description": "Image repository within the registry"
+            },
+            "tag": {
+              "type": "string",
+              "default": "",
+              "description": "Image tag. Defaults to the chart appVersion when empty. Left out of the image when digest is set"
+            },
+            "digest": {
+              "type": "string",
+              "default": "",
+              "description": "Image digest without the leading @, for example sha256:0e07... When set, the image has no tag."
             }
           }
         },
+        "pullPolicy": {
+          "type": "string",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ],
+          "default": "IfNotPresent",
+          "description": "Image pull policy of the Flows containers"
+        },
         "serviceAccount": {
-          "type": "object",
-          "description": "Service account of the Flows pods",
-          "additionalProperties": false,
-          "properties": {
-            "create": {
-              "type": "boolean",
-              "default": true,
-              "description": "Whether to create the service account"
-            },
-            "name": {
-              "type": "string",
-              "description": "Name of the service account"
-            },
-            "annotations": {
-              "$ref": "#/$defs/annotations"
-            }
-          }
+          "$ref": "#/$defs/serviceAccount"
         },
         "server": {
           "type": "object",
@@ -812,11 +799,6 @@
                   "$ref": "#/$defs/port",
                   "default": 8080,
                   "description": "Port the Flows server Service listens on"
-                },
-                "targetPort": {
-                  "$ref": "#/$defs/port",
-                  "default": 8080,
-                  "description": "Port of the Flows server container the Service sends traffic to"
                 },
                 "annotations": {
                   "$ref": "#/$defs/annotations"
@@ -957,9 +939,14 @@
               "default": true,
               "description": "Enable ingress for Flows"
             },
-            "className": {
+            "ingressClassName": {
               "type": "string",
-              "description": "Ingress class name (required when the Flows ingress is enabled)"
+              "description": "Ingress class name"
+            },
+            "tlsSecretName": {
+              "type": "string",
+              "default": "",
+              "description": "Name of the Secret that holds the TLS certificate. An empty string leaves out secretName from the Ingress TLS entry"
             },
             "annotations": {
               "$ref": "#/$defs/annotations"

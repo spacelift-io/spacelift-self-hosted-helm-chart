@@ -1,6 +1,8 @@
 {{- if and .Values.flows.enabled .Values.flows.ingress.enabled -}}
-{{- $domain := required "flows.appDomain is required when flows.ingress.enabled is true" .Values.flows.appDomain -}}
+{{- $domain := required "flows.domain is required when flows.ingress.enabled is true" .Values.flows.domain -}}
 {{- $server := printf "%s-flows-server" (include "spacelift.fullname" .) -}}
+{{- $serverHosts := list $domain (printf "*.endpoints.%s" $domain) (printf "mcp.%s" $domain) (printf "oauth.%s" $domain) -}}
+{{- $gatewayHost := printf "gateway.%s" $domain -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -12,12 +14,22 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  ingressClassName: {{ required "flows.ingress.className is required" .Values.flows.ingress.className }}
+  {{- with .Values.flows.ingress.ingressClassName }}
+  ingressClassName: {{ . }}
+  {{- end }}
   tls:
     - hosts:
-        - {{ $domain }}
+        {{- range $serverHosts }}
+        - {{ . | quote }}
+        {{- end }}
+        {{- if .Values.flows.ingress.exposeGateway }}
+        - {{ $gatewayHost | quote }}
+        {{- end }}
+      {{- with .Values.flows.ingress.tlsSecretName }}
+      secretName: {{ . | quote }}
+      {{- end }}
   rules:
-    {{- range list $domain (printf "*.endpoints.%s" $domain) (printf "mcp.%s" $domain) (printf "oauth.%s" $domain) }}
+    {{- range $serverHosts }}
     - host: {{ . | quote }}
       http:
         paths:
@@ -30,7 +42,7 @@ spec:
                   name: public
     {{- end }}
     {{- if .Values.flows.ingress.exposeGateway }}
-    - host: {{ printf "gateway.%s" $domain | quote }}
+    - host: {{ $gatewayHost | quote }}
       http:
         paths:
           - path: /

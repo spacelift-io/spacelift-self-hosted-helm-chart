@@ -15,7 +15,7 @@ spec:
   ports:
     - name: public
       port: {{ .Values.flows.server.service.port }}
-      targetPort: {{ .Values.flows.server.service.targetPort }}
+      targetPort: public
       protocol: TCP
   selector:
     {{- include "spacelift.flowsSelectorLabels" . | nindent 4 }}

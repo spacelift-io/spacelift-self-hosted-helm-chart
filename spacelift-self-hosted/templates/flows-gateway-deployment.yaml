@@ -34,7 +34,7 @@ spec:
           securityContext:
             {{- toYaml .Values.flows.gateway.securityContext | nindent 12 }}
           image: "{{ include "spacelift.flowsImage" . }}"
-          imagePullPolicy: {{ .Values.flows.global.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.flows.pullPolicy }}
           command:
             - /usr/bin/spacelift-flows
           args:

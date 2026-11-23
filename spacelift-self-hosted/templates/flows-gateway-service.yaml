@@ -15,15 +15,15 @@ spec:
   ports:
     - name: http
       port: {{ .Values.flows.gateway.service.ports.http }}
-      targetPort: {{ .Values.flows.gateway.service.ports.http }}
+      targetPort: http
       protocol: TCP
     - name: grpc
       port: {{ .Values.flows.gateway.service.ports.grpc }}
-      targetPort: {{ .Values.flows.gateway.service.ports.grpc }}
+      targetPort: grpc
       protocol: TCP
     - name: public
       port: {{ .Values.flows.gateway.service.ports.public }}
-      targetPort: {{ .Values.flows.gateway.service.ports.public }}
+      targetPort: public
       protocol: TCP
   selector:
     {{- include "spacelift.flowsSelectorLabels" . | nindent 4 }}

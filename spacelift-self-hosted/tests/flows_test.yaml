@@ -9,8 +9,7 @@ templates:
   - flows-serviceaccount.yaml
   - flows-ingress.yaml
 set:
-  flows.appDomain: flows.example.com
-  flows.ingress.className: alb
+  flows.domain: flows.example.com
 tests:
   - it: renders no components by default
     asserts:
@@ -112,16 +111,28 @@ tests:
           value: oci.spacelift.io/flows/backend:v7.3.0
         template: flows-gateway-deployment.yaml
 
-  - it: builds the image from repository and tag
+  - it: builds the image from registry, repository and tag
     template: flows-server-deployment.yaml
     set:
       flows.enabled: true
-      flows.global.image.repository: mirror.example.com/spacelift/flows-backend
-      flows.global.image.tag: v7.4.0
+      flows.image.registry: mirror.example.com/spacelift
+      flows.image.repository: flows-backend
+      flows.image.tag: v7.4.0
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
           value: mirror.example.com/spacelift/flows-backend:v7.4.0
+
+  - it: leaves the tag out when a digest is set
+    template: flows-worker-deployment.yaml
+    set:
+      flows.enabled: true
+      flows.image.tag: v7.4.0
+      flows.image.digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: oci.spacelift.io/flows/backend@sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
   - it: does not follow the backend image settings
     template: flows-server-deployment.yaml
@@ -257,7 +268,7 @@ tests:
     template: flows-server-deployment.yaml
     set:
       flows.enabled: true
-      flows.global.image.pullPolicy: Always
+      flows.pullPolicy: Always
       flows.server.replicaCount: 2
       flows.server.podAnnotations:
         example.com/scrape: "true"
@@ -317,8 +328,6 @@ tests:
       flows.gateway.service.ports.http: 3001
       flows.gateway.service.ports.grpc: 6238
       flows.gateway.service.ports.public: 8081
-      flows.server.service.port: 80
-      flows.server.service.targetPort: 8080
     asserts:
       - equal:
           path: spec.template.spec.containers[0].ports
@@ -338,25 +347,57 @@ tests:
           value:
             - name: http
               port: 3001
-              targetPort: 3001
+              targetPort: http
               protocol: TCP
             - name: grpc
               port: 6238
-              targetPort: 6238
+              targetPort: grpc
               protocol: TCP
             - name: public
               port: 8081
-              targetPort: 8081
+              targetPort: public
               protocol: TCP
         template: flows-gateway-service.yaml
+
+  - it: sends the server service to the named container port
+    set:
+      flows.enabled: true
+      flows.server.service.port: 80
+    asserts:
       - equal:
           path: spec.ports
           value:
             - name: public
               port: 80
-              targetPort: 8080
+              targetPort: public
               protocol: TCP
         template: flows-server-service.yaml
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value:
+            - name: public
+              containerPort: 8080
+              protocol: TCP
+        template: flows-server-deployment.yaml
+
+  - it: automounts the service account token by default
+    template: flows-serviceaccount.yaml
+    set:
+      flows.enabled: true
+    asserts:
+      - equal:
+          path: automountServiceAccountToken
+          value: true
+
+  - it: turns off the token automount when asked
+    template: flows-serviceaccount.yaml
+    set:
+      flows.enabled: true
+      flows.serviceAccount.automount: false
+    asserts:
+      - equal:
+          path: automountServiceAccountToken
+          value: false
 
   - it: creates a dedicated service account with its annotations
     set:
@@ -416,6 +457,7 @@ tests:
     template: flows-ingress.yaml
     set:
       flows.enabled: true
+      flows.ingress.ingressClassName: alb
     asserts:
       - equal:
           path: spec.ingressClassName
@@ -425,6 +467,9 @@ tests:
           value:
             - hosts:
                 - flows.example.com
+                - "*.endpoints.flows.example.com"
+                - mcp.flows.example.com
+                - oauth.flows.example.com
       - lengthEqual:
           path: spec.rules
           count: 4
@@ -453,6 +498,14 @@ tests:
       flows.enabled: true
       flows.ingress.exposeGateway: true
     asserts:
+      - equal:
+          path: spec.tls[0].hosts
+          value:
+            - flows.example.com
+            - "*.endpoints.flows.example.com"
+            - mcp.flows.example.com
+            - oauth.flows.example.com
+            - gateway.flows.example.com
       - lengthEqual:
           path: spec.rules
           count: 5
@@ -466,14 +519,17 @@ tests:
             port:
               name: public
 
-  - it: requires an ingress class for the ingress
+  - it: sets the TLS secret and leaves out the ingress class when asked
     template: flows-ingress.yaml
     set:
       flows.enabled: true
-      flows.ingress.className: ""
+      flows.ingress.tlsSecretName: flows-cert
     asserts:
-      - failedTemplate:
-          errorMessage: flows.ingress.className is required
+      - notExists:
+          path: spec.ingressClassName
+      - equal:
+          path: spec.tls[0].secretName
+          value: flows-cert
 
   - it: renders no ingress when the Flows ingress is disabled
     set:
@@ -491,16 +547,16 @@ tests:
     template: flows-ingress.yaml
     set:
       flows.enabled: true
-      flows.appDomain: ""
+      flows.domain: ""
     asserts:
       - failedTemplate:
-          errorMessage: flows.appDomain is required when flows.ingress.enabled is true
+          errorMessage: flows.domain is required when flows.ingress.enabled is true
 
   - it: rejects unknown Flows values
     template: flows-server-deployment.yaml
     set:
       flows.enabled: true
-      flows.bogus: true
+      flows.appDomain: flows.example.com
     asserts:
       - failedTemplate:
-          errorPattern: "/flows': additional properties 'bogus' not allowed"
+          errorPattern: "/flows': additional properties 'appDomain' not allowed"

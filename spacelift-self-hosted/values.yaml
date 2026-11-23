@@ -358,23 +358,27 @@ flows:
   enabled: false
   # Domain Flows is served on, without protocol and port (e.g., "flows.mycorp.com").
   # The Ingress also routes the endpoints, mcp and oauth subdomains of it.
-  appDomain: ""
+  domain: ""
   # Name of the Secret that holds the Flows config.yaml. It is mounted into the
   # server, worker and gateway pods, and must exist in the release namespace.
   secretName: spacelift-flows-secret
 
-  global:
-    image:
-      repository: oci.spacelift.io/flows/backend
-      pullPolicy: IfNotPresent
-      # Defaults to the chart appVersion.
-      tag: ""
+  image:
+    # Registry host, optionally with a path prefix (my-registry.example.com/mirror).
+    registry: oci.spacelift.io
+    repository: flows/backend
+    # Defaults to the chart appVersion. Left out of the image when digest is set.
+    tag: ""
+    # Pins the image, for example sha256:0e07...
+    digest: ""
+  pullPolicy: IfNotPresent
 
   # Flows gets its own service account. When create is false, the pods use the
   # service account in name, or "default" when name is empty.
   serviceAccount:
     create: true
     name: "spacelift-flows"
+    automount: true
     annotations: {}
 
   server:
@@ -382,7 +386,6 @@ flows:
     service:
       type: ClusterIP
       port: 8080
-      targetPort: 8080
       annotations: {}
     resources:
       limits:
@@ -450,8 +453,12 @@ flows:
 
   ingress:
     enabled: true
-    # Sets spec.ingressClassName on the Flows Ingress. Required.
-    className: ""
+    # Sets spec.ingressClassName on the Flows Ingress. Left out when empty.
+    ingressClassName: ""
+    # Name of the Secret that holds the TLS certificate. Leave it empty for
+    # controllers that use a default certificate or read it from annotations,
+    # like the AWS Load Balancer Controller.
+    tlsSecretName: ""
     annotations: {}
       # For AWS ALB:
       # alb.ingress.kubernetes.io/scheme: internet-facing

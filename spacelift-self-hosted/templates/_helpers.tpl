@@ -388,10 +388,15 @@ permissions.
 {{- end }}
 
 {{/*
-The Flows backend image from .Values.flows.global.image. The tag defaults to the
-chart appVersion, because Flows is released together with Spacelift.
+The Flows backend image from .Values.flows.image. The tag defaults to the chart
+appVersion, because Flows is released together with Spacelift.
 */}}
 {{- define "spacelift.flowsImage" -}}
-	{{- $image := .Values.flows.global.image -}}
-	{{- printf "%s:%s" $image.repository ($image.tag | default .Chart.AppVersion) -}}
+	{{- $image := .Values.flows.image -}}
+	{{- $repository := include "spacelift.imageRepository" $image -}}
+	{{- if $image.digest -}}
+		{{- printf "%s@%s" $repository $image.digest -}}
+	{{- else -}}
+		{{- printf "%s:%s" $repository ($image.tag | default .Chart.AppVersion) -}}
+	{{- end -}}
 {{- end -}}

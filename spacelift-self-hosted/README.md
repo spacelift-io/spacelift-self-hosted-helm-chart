@@ -44,6 +44,41 @@ both keys, the chart fails to render too, because it cannot read your secrets.
 Point `shared.launcherImage` at the image from your secrets, or keep
 `shared.image` for now.
 
+## Flows
+
+The chart can also deploy [Spacelift Flows](https://docs.spacelift.io/flows): the
+server, the worker and the gateway. It is off by default. To turn it on, set
+`flows.enabled` to `true`, `flows.appDomain` to the domain Flows is served on and
+`flows.ingress.className` to your ingress class:
+
+```yaml
+flows:
+  enabled: true
+  appDomain: flows.mycorp.com
+  ingress:
+    className: my-ingress-class
+```
+
+Flows reads its configuration from a `config.yaml` in a Secret, `spacelift-flows-secret`
+by default. Create it in the release namespace before you enable Flows, and set
+`flows.secretName` if yours has another name.
+
+By default the chart pulls `oci.spacelift.io/flows/backend:<appVersion>`, with the
+credentials from `shared.imagePullSecrets`. Your license has to include Flows for
+them to work on this image. Set `flows.global.image` to change the repository or
+the tag.
+
+Flows runs with its own service account, `spacelift-flows`, so it does not share
+the permissions of the Spacelift backend. Add the annotations for its cloud role
+in `flows.serviceAccount.annotations`.
+
+The Flows Ingress routes `flows.appDomain` and its `endpoints`, `mcp` and `oauth`
+subdomains to the server. Set `flows.ingress.exposeGateway` to `true` to also route
+`gateway.<appDomain>` to the gateway, for agents that run outside the cluster.
+
+The Flows agents are not part of this chart. They have their own,
+[`spacelift-flows-agent`](https://github.com/spacelift-io/spacelift-helm-charts/tree/main/spacelift-flows-agent).
+
 ## Quick Start
 
 Depending on your environment, you can check the [guides here](https://docs.spacelift.io/self-hosted/latest/installing-spacelift/reference-architecture/guides)

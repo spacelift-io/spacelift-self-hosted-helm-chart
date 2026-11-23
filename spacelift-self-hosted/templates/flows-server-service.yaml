@@ -1,0 +1,23 @@
+{{- if .Values.flows.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "spacelift.fullname" . }}-flows-server
+  labels:
+    {{- include "spacelift.flowsLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+  {{- with .Values.flows.server.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.flows.server.service.type }}
+  ports:
+    - name: public
+      port: {{ .Values.flows.server.service.port }}
+      targetPort: {{ .Values.flows.server.service.targetPort }}
+      protocol: TCP
+  selector:
+    {{- include "spacelift.flowsSelectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: server
+{{- end }}

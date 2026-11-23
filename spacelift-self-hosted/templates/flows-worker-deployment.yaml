@@ -1,0 +1,70 @@
+{{- if .Values.flows.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "spacelift.fullname" . }}-flows-worker
+  labels:
+    {{- include "spacelift.flowsLabels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.flows.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "spacelift.flowsSelectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      {{- with .Values.flows.worker.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "spacelift.flowsSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      {{- with .Values.shared.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "spacelift.flowsServiceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.flows.worker.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          securityContext:
+            {{- toYaml .Values.flows.worker.securityContext | nindent 12 }}
+          image: "{{ include "spacelift.flowsImage" . }}"
+          imagePullPolicy: {{ .Values.flows.global.image.pullPolicy }}
+          command:
+            - /usr/bin/spacelift-flows
+          args:
+            - worker
+          env:
+            - name: CONFIG_FILE
+              value: /etc/flows/config.yaml
+            {{- with .Values.flows.worker.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/flows
+              readOnly: true
+          resources:
+            {{- toYaml .Values.flows.worker.resources | nindent 12 }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ .Values.flows.secretName }}
+      {{- with .Values.flows.worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.flows.worker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.flows.worker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

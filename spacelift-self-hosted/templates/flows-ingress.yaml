@@ -1,0 +1,44 @@
+{{- if and .Values.flows.enabled .Values.flows.ingress.enabled -}}
+{{- $domain := required "flows.appDomain is required when flows.ingress.enabled is true" .Values.flows.appDomain -}}
+{{- $server := printf "%s-flows-server" (include "spacelift.fullname" .) -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "spacelift.fullname" . }}-flows
+  labels:
+    {{- include "spacelift.flowsLabels" . | nindent 4 }}
+  {{- with .Values.flows.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ required "flows.ingress.className is required" .Values.flows.ingress.className }}
+  tls:
+    - hosts:
+        - {{ $domain }}
+  rules:
+    {{- range list $domain (printf "*.endpoints.%s" $domain) (printf "mcp.%s" $domain) (printf "oauth.%s" $domain) }}
+    - host: {{ . | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $server }}
+                port:
+                  name: public
+    {{- end }}
+    {{- if .Values.flows.ingress.exposeGateway }}
+    - host: {{ printf "gateway.%s" $domain | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "spacelift.fullname" . }}-flows-gateway
+                port:
+                  name: public
+    {{- end }}
+{{- end }}

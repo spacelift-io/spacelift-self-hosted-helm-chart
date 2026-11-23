@@ -92,7 +92,7 @@
         },
         "imagePullSecrets": {
           "type": "array",
-          "description": "Secrets with credentials to pull the image from a private registry. Set on the server, drain, scheduler and VCS Gateway pods.",
+          "description": "Secrets with credentials to pull the image from a private registry. Set on the server, drain, scheduler, VCS Gateway and Flows pods.",
           "default": [],
           "items": {
             "type": "object",
@@ -685,6 +685,293 @@
       "type": "string",
       "default": "spacelift",
       "description": "Override the full name used for resources"
+    },
+    "flows": {
+      "type": "object",
+      "description": "Spacelift Flows configuration: the server, worker and gateway. Ignored while enabled is false.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Deploy Spacelift Flows"
+        },
+        "appDomain": {
+          "type": "string",
+          "description": "Domain Flows is served on (required when the Flows ingress is enabled). Format: hostname without protocol and port"
+        },
+        "secretName": {
+          "type": "string",
+          "minLength": 1,
+          "default": "spacelift-flows-secret",
+          "description": "Name of the Secret that holds the Flows config.yaml, mounted into the server, worker and gateway pods"
+        },
+        "global": {
+          "type": "object",
+          "description": "Settings shared by the Flows server, worker and gateway",
+          "additionalProperties": false,
+          "properties": {
+            "image": {
+              "type": "object",
+              "description": "The Flows backend image, rendered as <repository>:<tag>",
+              "additionalProperties": false,
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "minLength": 1,
+                  "default": "oci.spacelift.io/flows/backend",
+                  "description": "Image repository, including the registry"
+                },
+                "pullPolicy": {
+                  "type": "string",
+                  "enum": [
+                    "Always",
+                    "IfNotPresent",
+                    "Never"
+                  ],
+                  "default": "IfNotPresent",
+                  "description": "Image pull policy of the Flows containers"
+                },
+                "tag": {
+                  "type": "string",
+                  "default": "",
+                  "description": "Image tag. Defaults to the chart appVersion when empty"
+                }
+              }
+            }
+          }
+        },
+        "serviceAccount": {
+          "type": "object",
+          "description": "Service account of the Flows pods",
+          "additionalProperties": false,
+          "properties": {
+            "create": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether to create the service account"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the service account"
+            },
+            "annotations": {
+              "$ref": "#/$defs/annotations"
+            }
+          }
+        },
+        "server": {
+          "type": "object",
+          "description": "Flows server configuration",
+          "additionalProperties": false,
+          "properties": {
+            "replicaCount": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "description": "Number of replicas"
+            },
+            "resources": {
+              "$ref": "#/$defs/resources"
+            },
+            "extraEnv": {
+              "type": "array",
+              "default": [],
+              "description": "Extra environment variables for the container, as Kubernetes EnvVar objects",
+              "items": {
+                "type": "object"
+              }
+            },
+            "podAnnotations": {
+              "$ref": "#/$defs/annotations"
+            },
+            "podSecurityContext": {
+              "$ref": "#/$defs/podSecurityContext"
+            },
+            "securityContext": {
+              "$ref": "#/$defs/securityContext"
+            },
+            "nodeSelector": {
+              "$ref": "#/$defs/nodeSelector"
+            },
+            "tolerations": {
+              "$ref": "#/$defs/tolerations"
+            },
+            "affinity": {
+              "$ref": "#/$defs/affinity"
+            },
+            "service": {
+              "type": "object",
+              "description": "Flows server service configuration",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "$ref": "#/$defs/serviceType"
+                },
+                "port": {
+                  "$ref": "#/$defs/port",
+                  "default": 8080,
+                  "description": "Port the Flows server Service listens on"
+                },
+                "targetPort": {
+                  "$ref": "#/$defs/port",
+                  "default": 8080,
+                  "description": "Port of the Flows server container the Service sends traffic to"
+                },
+                "annotations": {
+                  "$ref": "#/$defs/annotations"
+                }
+              }
+            },
+            "lifecycle": {
+              "$ref": "#/$defs/lifecycle"
+            }
+          }
+        },
+        "worker": {
+          "type": "object",
+          "description": "Flows worker configuration",
+          "additionalProperties": false,
+          "properties": {
+            "replicaCount": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "description": "Number of replicas"
+            },
+            "resources": {
+              "$ref": "#/$defs/resources"
+            },
+            "extraEnv": {
+              "type": "array",
+              "default": [],
+              "description": "Extra environment variables for the container, as Kubernetes EnvVar objects",
+              "items": {
+                "type": "object"
+              }
+            },
+            "podAnnotations": {
+              "$ref": "#/$defs/annotations"
+            },
+            "podSecurityContext": {
+              "$ref": "#/$defs/podSecurityContext"
+            },
+            "securityContext": {
+              "$ref": "#/$defs/securityContext"
+            },
+            "nodeSelector": {
+              "$ref": "#/$defs/nodeSelector"
+            },
+            "tolerations": {
+              "$ref": "#/$defs/tolerations"
+            },
+            "affinity": {
+              "$ref": "#/$defs/affinity"
+            }
+          }
+        },
+        "gateway": {
+          "type": "object",
+          "description": "Flows gateway configuration",
+          "additionalProperties": false,
+          "properties": {
+            "replicaCount": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1,
+              "description": "Number of replicas"
+            },
+            "resources": {
+              "$ref": "#/$defs/resources"
+            },
+            "extraEnv": {
+              "type": "array",
+              "default": [],
+              "description": "Extra environment variables for the container, as Kubernetes EnvVar objects",
+              "items": {
+                "type": "object"
+              }
+            },
+            "podAnnotations": {
+              "$ref": "#/$defs/annotations"
+            },
+            "podSecurityContext": {
+              "$ref": "#/$defs/podSecurityContext"
+            },
+            "securityContext": {
+              "$ref": "#/$defs/securityContext"
+            },
+            "nodeSelector": {
+              "$ref": "#/$defs/nodeSelector"
+            },
+            "tolerations": {
+              "$ref": "#/$defs/tolerations"
+            },
+            "affinity": {
+              "$ref": "#/$defs/affinity"
+            },
+            "service": {
+              "type": "object",
+              "description": "Flows gateway service configuration",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "$ref": "#/$defs/serviceType"
+                },
+                "ports": {
+                  "type": "object",
+                  "description": "Ports of the gateway container and Service",
+                  "additionalProperties": false,
+                  "properties": {
+                    "http": {
+                      "$ref": "#/$defs/port",
+                      "default": 3000,
+                      "description": "HTTP port"
+                    },
+                    "grpc": {
+                      "$ref": "#/$defs/port",
+                      "default": 6237,
+                      "description": "gRPC port"
+                    },
+                    "public": {
+                      "$ref": "#/$defs/port",
+                      "default": 8080,
+                      "description": "Public port, which agents connect to"
+                    }
+                  }
+                },
+                "annotations": {
+                  "$ref": "#/$defs/annotations"
+                }
+              }
+            }
+          }
+        },
+        "ingress": {
+          "type": "object",
+          "description": "Flows ingress configuration",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enable ingress for Flows"
+            },
+            "className": {
+              "type": "string",
+              "description": "Ingress class name (required when the Flows ingress is enabled)"
+            },
+            "annotations": {
+              "$ref": "#/$defs/annotations"
+            },
+            "exposeGateway": {
+              "type": "boolean",
+              "default": false,
+              "description": "Also route gateway.<domain> to the Flows gateway"
+            }
+          }
+        }
+      }
     },
     "extraManifests": {
       "type": "array",

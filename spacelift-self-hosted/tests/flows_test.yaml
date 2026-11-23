@@ -1,0 +1,484 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: Flows components
+templates:
+  - flows-server-deployment.yaml
+  - flows-worker-deployment.yaml
+  - flows-gateway-deployment.yaml
+  - flows-server-service.yaml
+  - flows-gateway-service.yaml
+  - flows-serviceaccount.yaml
+  - flows-ingress.yaml
+set:
+  flows.appDomain: flows.example.com
+  flows.ingress.className: alb
+tests:
+  - it: renders no components by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders no components when Flows is disabled, whatever else is set
+    set:
+      flows.serviceAccount.create: true
+      flows.ingress.enabled: true
+      flows.ingress.exposeGateway: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders all components when Flows is enabled
+    set:
+      flows.enabled: true
+    asserts:
+      - isKind:
+          of: Deployment
+        template: flows-server-deployment.yaml
+      - equal:
+          path: metadata.name
+          value: spacelift-flows-server
+        template: flows-server-deployment.yaml
+      - isKind:
+          of: Deployment
+        template: flows-worker-deployment.yaml
+      - equal:
+          path: metadata.name
+          value: spacelift-flows-worker
+        template: flows-worker-deployment.yaml
+      - isKind:
+          of: Deployment
+        template: flows-gateway-deployment.yaml
+      - equal:
+          path: metadata.name
+          value: spacelift-flows-gateway
+        template: flows-gateway-deployment.yaml
+      - isKind:
+          of: Service
+        template: flows-server-service.yaml
+      - equal:
+          path: metadata.name
+          value: spacelift-flows-server
+        template: flows-server-service.yaml
+      - isKind:
+          of: Service
+        template: flows-gateway-service.yaml
+      - equal:
+          path: metadata.name
+          value: spacelift-flows-gateway
+        template: flows-gateway-service.yaml
+      - isKind:
+          of: ServiceAccount
+        template: flows-serviceaccount.yaml
+      - isKind:
+          of: Ingress
+        template: flows-ingress.yaml
+      - equal:
+          path: metadata.name
+          value: spacelift-flows
+        template: flows-ingress.yaml
+
+  - it: runs each workload with its own subcommand
+    set:
+      flows.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: [server]
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: [worker]
+        template: flows-worker-deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: [gateway]
+        template: flows-gateway-deployment.yaml
+
+  - it: pulls flows/backend from oci.spacelift.io with the chart appVersion by default
+    chart:
+      appVersion: v7.3.0
+    set:
+      flows.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: oci.spacelift.io/flows/backend:v7.3.0
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: oci.spacelift.io/flows/backend:v7.3.0
+        template: flows-worker-deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: oci.spacelift.io/flows/backend:v7.3.0
+        template: flows-gateway-deployment.yaml
+
+  - it: builds the image from repository and tag
+    template: flows-server-deployment.yaml
+    set:
+      flows.enabled: true
+      flows.global.image.repository: mirror.example.com/spacelift/flows-backend
+      flows.global.image.tag: v7.4.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com/spacelift/flows-backend:v7.4.0
+
+  - it: does not follow the backend image settings
+    template: flows-server-deployment.yaml
+    chart:
+      appVersion: v7.3.0
+    set:
+      flows.enabled: true
+      shared.backendImage.registry: mirror.example.com
+      shared.backendImage.tag: v7.0.0
+      shared.backendImage.fips: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: oci.spacelift.io/flows/backend:v7.3.0
+
+  - it: uses the shared image pull secrets on every workload
+    set:
+      flows.enabled: true
+      shared.imagePullSecrets:
+        - name: spacelift-registry
+    asserts:
+      - equal:
+          path: spec.template.spec.imagePullSecrets
+          value:
+            - name: spacelift-registry
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.template.spec.imagePullSecrets
+          value:
+            - name: spacelift-registry
+        template: flows-worker-deployment.yaml
+      - equal:
+          path: spec.template.spec.imagePullSecrets
+          value:
+            - name: spacelift-registry
+        template: flows-gateway-deployment.yaml
+
+  - it: leaves imagePullSecrets out when none are set
+    template: flows-server-deployment.yaml
+    set:
+      flows.enabled: true
+    asserts:
+      - notExists:
+          path: spec.template.spec.imagePullSecrets
+
+  - it: mounts the config secret into every workload
+    set:
+      flows.enabled: true
+      flows.secretName: my-flows-config
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: my-flows-config
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: my-flows-config
+        template: flows-worker-deployment.yaml
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: my-flows-config
+        template: flows-gateway-deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CONFIG_FILE
+            value: /etc/flows/config.yaml
+        template: flows-server-deployment.yaml
+
+  - it: selects only the pods of its own component
+    set:
+      flows.enabled: true
+    asserts:
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: spacelift-self-hosted-flows
+            app.kubernetes.io/instance: RELEASE-NAME-flows
+            app.kubernetes.io/component: server
+        template: flows-server-service.yaml
+      - equal:
+          path: spec.template.metadata.labels
+          value:
+            app.kubernetes.io/name: spacelift-self-hosted-flows
+            app.kubernetes.io/instance: RELEASE-NAME-flows
+            app.kubernetes.io/component: server
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: spacelift-self-hosted-flows
+            app.kubernetes.io/instance: RELEASE-NAME-flows
+            app.kubernetes.io/component: gateway
+        template: flows-gateway-service.yaml
+      - equal:
+          path: spec.template.metadata.labels
+          value:
+            app.kubernetes.io/name: spacelift-self-hosted-flows
+            app.kubernetes.io/instance: RELEASE-NAME-flows
+            app.kubernetes.io/component: gateway
+        template: flows-gateway-deployment.yaml
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: spacelift-self-hosted-flows
+            app.kubernetes.io/instance: RELEASE-NAME-flows
+            app.kubernetes.io/component: worker
+        template: flows-worker-deployment.yaml
+
+  - it: passes workload settings through
+    template: flows-server-deployment.yaml
+    set:
+      flows.enabled: true
+      flows.global.image.pullPolicy: Always
+      flows.server.replicaCount: 2
+      flows.server.podAnnotations:
+        example.com/scrape: "true"
+      flows.server.extraEnv:
+        - name: EXTRA
+          value: "1"
+      flows.server.lifecycle:
+        preStop:
+          exec:
+            command: [sleep, "30"]
+      flows.server.nodeSelector:
+        pool: flows
+      flows.server.resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: Always
+      - equal:
+          path: spec.template.metadata.annotations
+          value:
+            example.com/scrape: "true"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: EXTRA
+            value: "1"
+      - equal:
+          path: spec.template.spec.containers[0].lifecycle.preStop.exec.command
+          value: [sleep, "30"]
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value:
+            pool: flows
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests
+          value:
+            cpu: 100m
+            memory: 128Mi
+
+  - it: leaves pod annotations out when none are set
+    template: flows-worker-deployment.yaml
+    set:
+      flows.enabled: true
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations
+
+  - it: uses the gateway ports on the container and the service
+    set:
+      flows.enabled: true
+      flows.gateway.service.ports.http: 3001
+      flows.gateway.service.ports.grpc: 6238
+      flows.gateway.service.ports.public: 8081
+      flows.server.service.port: 80
+      flows.server.service.targetPort: 8080
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports
+          value:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+            - name: grpc
+              containerPort: 6238
+              protocol: TCP
+            - name: public
+              containerPort: 8081
+              protocol: TCP
+        template: flows-gateway-deployment.yaml
+      - equal:
+          path: spec.ports
+          value:
+            - name: http
+              port: 3001
+              targetPort: 3001
+              protocol: TCP
+            - name: grpc
+              port: 6238
+              targetPort: 6238
+              protocol: TCP
+            - name: public
+              port: 8081
+              targetPort: 8081
+              protocol: TCP
+        template: flows-gateway-service.yaml
+      - equal:
+          path: spec.ports
+          value:
+            - name: public
+              port: 80
+              targetPort: 8080
+              protocol: TCP
+        template: flows-server-service.yaml
+
+  - it: creates a dedicated service account with its annotations
+    set:
+      flows.enabled: true
+      flows.serviceAccount.annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/flows
+    asserts:
+      - equal:
+          path: metadata.name
+          value: spacelift-flows
+        template: flows-serviceaccount.yaml
+      - equal:
+          path: metadata.annotations
+          value:
+            eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/flows
+        template: flows-serviceaccount.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: spacelift-flows
+        template: flows-server-deployment.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: spacelift-flows
+        template: flows-worker-deployment.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: spacelift-flows
+        template: flows-gateway-deployment.yaml
+
+  - it: uses an existing service account when create is false
+    set:
+      flows.enabled: true
+      flows.serviceAccount.create: false
+      flows.serviceAccount.name: existing-flows
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: flows-serviceaccount.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: existing-flows
+        template: flows-server-deployment.yaml
+
+  - it: never falls back to the backend service account
+    template: flows-server-deployment.yaml
+    set:
+      flows.enabled: true
+      flows.serviceAccount.create: false
+      flows.serviceAccount.name: ""
+      serviceAccount.name: spacelift-backend
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: default
+
+  - it: routes the domain and its subdomains to the server
+    template: flows-ingress.yaml
+    set:
+      flows.enabled: true
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: alb
+      - equal:
+          path: spec.tls
+          value:
+            - hosts:
+                - flows.example.com
+      - lengthEqual:
+          path: spec.rules
+          count: 4
+      - equal:
+          path: spec.rules[0].host
+          value: flows.example.com
+      - equal:
+          path: spec.rules[1].host
+          value: "*.endpoints.flows.example.com"
+      - equal:
+          path: spec.rules[2].host
+          value: mcp.flows.example.com
+      - equal:
+          path: spec.rules[3].host
+          value: oauth.flows.example.com
+      - equal:
+          path: spec.rules[1].http.paths[0].backend.service
+          value:
+            name: spacelift-flows-server
+            port:
+              name: public
+
+  - it: routes the gateway subdomain to the gateway when exposeGateway is set
+    template: flows-ingress.yaml
+    set:
+      flows.enabled: true
+      flows.ingress.exposeGateway: true
+    asserts:
+      - lengthEqual:
+          path: spec.rules
+          count: 5
+      - equal:
+          path: spec.rules[4].host
+          value: gateway.flows.example.com
+      - equal:
+          path: spec.rules[4].http.paths[0].backend.service
+          value:
+            name: spacelift-flows-gateway
+            port:
+              name: public
+
+  - it: requires an ingress class for the ingress
+    template: flows-ingress.yaml
+    set:
+      flows.enabled: true
+      flows.ingress.className: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: flows.ingress.className is required
+
+  - it: renders no ingress when the Flows ingress is disabled
+    set:
+      flows.enabled: true
+      flows.ingress.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: flows-ingress.yaml
+      - isKind:
+          of: Deployment
+        template: flows-server-deployment.yaml
+
+  - it: requires a domain for the ingress
+    template: flows-ingress.yaml
+    set:
+      flows.enabled: true
+      flows.appDomain: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: flows.appDomain is required when flows.ingress.enabled is true
+
+  - it: rejects unknown Flows values
+    template: flows-server-deployment.yaml
+    set:
+      flows.enabled: true
+      flows.bogus: true
+    asserts:
+      - failedTemplate:
+          errorPattern: "/flows': additional properties 'bogus' not allowed"

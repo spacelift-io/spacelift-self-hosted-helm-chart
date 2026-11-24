@@ -278,7 +278,7 @@ vcsGateway:
 cloudSqlProxy:
   enabled: false
   quiet: true
-  image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.28.0
+  image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.28.1
   dbConnectionName:
   resources:
     requests:

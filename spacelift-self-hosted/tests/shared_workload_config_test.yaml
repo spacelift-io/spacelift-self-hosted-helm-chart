@@ -3,12 +3,10 @@ suite: shared workload image and secrets
 templates:
   - server-deployment.yaml
   - drain-deployment.yaml
-  - scheduler-deployment.yaml
   - vcs-gateway-deployment.yaml
 tests:
   - it: propagates the shared image and workload secrets
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
       shared.image: registry.example.com/spacelift/backend:v6.5.0
@@ -25,10 +23,6 @@ tests:
           path: spec.template.spec.containers[0].image
           value: registry.example.com/spacelift/backend:v6.5.0
         template: drain-deployment.yaml
-      - equal:
-          path: spec.template.spec.containers[0].image
-          value: registry.example.com/spacelift/backend:v6.5.0
-        template: scheduler-deployment.yaml
       - equal:
           path: spec.template.spec.containers[0].image
           value: registry.example.com/spacelift/backend:v6.5.0
@@ -54,19 +48,12 @@ tests:
           value:
             - secretRef:
                 name: shared-backend-secret
-        template: scheduler-deployment.yaml
-      - equal:
-          path: spec.template.spec.containers[0].envFrom
-          value:
-            - secretRef:
-                name: shared-backend-secret
             - secretRef:
                 name: vcs-gateway-secret
         template: vcs-gateway-deployment.yaml
 
   - it: omits the per-component secret when it is not set
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
       shared.image: registry.example.com/spacelift/backend:v6.5.0
@@ -93,7 +80,6 @@ tests:
 
   - it: never emits a secret reference without a name
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
       shared.image: registry.example.com/spacelift/backend:v6.5.0
@@ -114,7 +100,6 @@ tests:
 
   - it: sets the shared image pull secrets on every workload
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
       shared.image: oci.spacelift.io/spacelift/backend:v6.5.0
@@ -139,17 +124,10 @@ tests:
           value:
             - name: spacelift-registry
             - name: mirror-registry
-        template: scheduler-deployment.yaml
-      - equal:
-          path: spec.template.spec.imagePullSecrets
-          value:
-            - name: spacelift-registry
-            - name: mirror-registry
         template: vcs-gateway-deployment.yaml
 
   - it: omits image pull secrets by default
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
       shared.image: registry.example.com/spacelift/backend:v6.5.0
@@ -160,9 +138,6 @@ tests:
       - notExists:
           path: spec.template.spec.imagePullSecrets
         template: drain-deployment.yaml
-      - notExists:
-          path: spec.template.spec.imagePullSecrets
-        template: scheduler-deployment.yaml
       - notExists:
           path: spec.template.spec.imagePullSecrets
         template: vcs-gateway-deployment.yaml

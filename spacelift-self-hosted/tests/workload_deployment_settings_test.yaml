@@ -3,11 +3,9 @@ suite: workload deployment settings
 templates:
   - server-deployment.yaml
   - drain-deployment.yaml
-  - scheduler-deployment.yaml
   - vcs-gateway-deployment.yaml
 set:
   shared.launcherImage.enabled: true
-  scheduler.enabled: true
   vcsGateway.enabled: true
   vcsGateway.domain: vcs-gateway.example.com
 tests:
@@ -63,12 +61,9 @@ tests:
               maxSurge: 0
               maxUnavailable: 90%
 
-  - it: leaves the strategy to Kubernetes on the drain and scheduler by default
+  - it: leaves the strategy to Kubernetes on the drain by default
     asserts:
       - template: drain-deployment.yaml
-        notExists:
-          path: spec.strategy
-      - template: scheduler-deployment.yaml
         notExists:
           path: spec.strategy
 
@@ -83,8 +78,6 @@ tests:
         rollingUpdate:
           maxSurge: "50%"
           maxUnavailable: "25%"
-      scheduler.strategy:
-        type: Recreate
       vcsGateway.strategy:
         rollingUpdate:
           maxUnavailable: 1
@@ -105,11 +98,6 @@ tests:
             rollingUpdate:
               maxSurge: 50%
               maxUnavailable: 25%
-      - template: scheduler-deployment.yaml
-        equal:
-          path: spec.strategy
-          value:
-            type: Recreate
       - template: vcs-gateway-deployment.yaml
         equal:
           path: spec.strategy
@@ -192,8 +180,6 @@ tests:
         secret.reloader.stakater.com/reload: server-secret
       drain.deploymentAnnotations:
         secret.reloader.stakater.com/reload: drain-secret
-      scheduler.deploymentAnnotations:
-        secret.reloader.stakater.com/reload: scheduler-secret
       vcsGateway.deploymentAnnotations:
         secret.reloader.stakater.com/reload: vcs-gateway-secret
     asserts:
@@ -207,11 +193,6 @@ tests:
           path: metadata.annotations
           value:
             secret.reloader.stakater.com/reload: drain-secret
-      - template: scheduler-deployment.yaml
-        equal:
-          path: metadata.annotations
-          value:
-            secret.reloader.stakater.com/reload: scheduler-secret
       - template: vcs-gateway-deployment.yaml
         equal:
           path: metadata.annotations
@@ -228,8 +209,6 @@ tests:
       server.deploymentAnnotations:
         example.com/deployment: "true"
       drain.deploymentAnnotations:
-        example.com/deployment: "true"
-      scheduler.deploymentAnnotations:
         example.com/deployment: "true"
       vcsGateway.deploymentAnnotations:
         example.com/deployment: "true"

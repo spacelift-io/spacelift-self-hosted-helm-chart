@@ -3,11 +3,9 @@ suite: workload pod settings
 templates:
   - server-deployment.yaml
   - drain-deployment.yaml
-  - scheduler-deployment.yaml
   - vcs-gateway-deployment.yaml
 set:
   shared.launcherImage.enabled: true
-  scheduler.enabled: true
   vcsGateway.enabled: true
   vcsGateway.domain: vcs-gateway.example.com
 tests:
@@ -17,8 +15,6 @@ tests:
         example.com/component: server
       drain.podAnnotations:
         example.com/component: drain
-      scheduler.podAnnotations:
-        example.com/component: scheduler
       vcsGateway.podAnnotations:
         example.com/component: vcs-gateway
     asserts:
@@ -32,11 +28,6 @@ tests:
           path: spec.template.metadata.annotations
           value:
             example.com/component: drain
-      - template: scheduler-deployment.yaml
-        equal:
-          path: spec.template.metadata.annotations
-          value:
-            example.com/component: scheduler
       - template: vcs-gateway-deployment.yaml
         equal:
           path: spec.template.metadata.annotations
@@ -52,7 +43,6 @@ tests:
     set:
       server.terminationGracePeriodSeconds: 120
       drain.terminationGracePeriodSeconds: 300
-      scheduler.terminationGracePeriodSeconds: 60
       vcsGateway.terminationGracePeriodSeconds: 90
     asserts:
       - template: server-deployment.yaml
@@ -63,10 +53,6 @@ tests:
         equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 300
-      - template: scheduler-deployment.yaml
-        equal:
-          path: spec.template.spec.terminationGracePeriodSeconds
-          value: 60
       - template: vcs-gateway-deployment.yaml
         equal:
           path: spec.template.spec.terminationGracePeriodSeconds
@@ -76,7 +62,6 @@ tests:
     set:
       server.terminationGracePeriodSeconds: 0
       drain.terminationGracePeriodSeconds: 0
-      scheduler.terminationGracePeriodSeconds: 0
       vcsGateway.terminationGracePeriodSeconds: 0
     asserts:
       - equal:

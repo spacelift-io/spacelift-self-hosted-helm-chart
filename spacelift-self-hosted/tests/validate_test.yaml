@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
+suite: chart-wide validation
+templates:
+  - validate.yaml
+tests:
+  - it: rejects a backend image older than v6.4.0 set with shared.image
+    set:
+      shared.image: registry.example.com/spacelift/backend:v6.3.0
+    asserts:
+      - failedTemplate:
+          errorMessage: this chart needs Spacelift v6.4.0 or later, but the backend image registry.example.com/spacelift/backend:v6.3.0 is v6.3.0. Upgrade the image first, or stay on chart 7.2.
+
+  - it: rejects a backend image tag older than v6.4.0
+    set:
+      shared.backendImage.tag: v6.3.2
+    asserts:
+      - failedTemplate:
+          errorMessage: this chart needs Spacelift v6.4.0 or later, but the backend image oci.spacelift.io/deploy/backend:v6.3.2 is v6.3.2. Upgrade the image first, or stay on chart 7.2.
+
+  - it: accepts v6.4.0
+    set:
+      shared.image: registry.example.com/spacelift/backend:v6.4.0
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: accepts the default image from the chart appVersion
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: accepts an image tag without a readable version
+    set:
+      shared.backendImage.tag: latest
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: accepts a digest without a tag, because the version cannot be read
+    set:
+      shared.backendImage.digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+    asserts:
+      - notFailedTemplate: {}

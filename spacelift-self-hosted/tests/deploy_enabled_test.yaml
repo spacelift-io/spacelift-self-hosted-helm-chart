@@ -5,9 +5,6 @@ templates:
   - drain-pdb.yaml
   - drain-serviceaccount.yaml
   - mqtt-service.yaml
-  - scheduler-deployment.yaml
-  - scheduler-pdb.yaml
-  - scheduler-serviceaccount.yaml
   - server-deployment.yaml
   - server-ingress-v6.yaml
   - server-ingress.yaml
@@ -45,10 +42,6 @@ tests:
       flows.enabled: true
       flows.domain: flows.example.com
       shared.launcherImage.enabled: false
-      scheduler.enabled: true
-      scheduler.pdb.enabled: true
-      scheduler.pdb.minAvailable: 1
-      scheduler.serviceAccount.create: true
       server.pdb.enabled: true
       server.pdb.minAvailable: 1
       server.serviceAccount.create: true
@@ -75,15 +68,6 @@ tests:
       - hasDocuments:
           count: 0
         template: mqtt-service.yaml
-      - hasDocuments:
-          count: 0
-        template: scheduler-deployment.yaml
-      - hasDocuments:
-          count: 0
-        template: scheduler-pdb.yaml
-      - hasDocuments:
-          count: 0
-        template: scheduler-serviceaccount.yaml
       - hasDocuments:
           count: 0
         template: server-deployment.yaml

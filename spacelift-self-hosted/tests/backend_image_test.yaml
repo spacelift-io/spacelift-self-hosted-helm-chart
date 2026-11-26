@@ -3,7 +3,6 @@ suite: backend image
 templates:
   - server-deployment.yaml
   - drain-deployment.yaml
-  - scheduler-deployment.yaml
   - vcs-gateway-deployment.yaml
 set:
   shared.launcherImage.enabled: true
@@ -12,7 +11,6 @@ tests:
     chart:
       appVersion: v7.1.0
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
     asserts:
@@ -24,10 +22,6 @@ tests:
           path: spec.template.spec.containers[0].image
           value: oci.spacelift.io/deploy/backend:v7.1.0
         template: drain-deployment.yaml
-      - equal:
-          path: spec.template.spec.containers[0].image
-          value: oci.spacelift.io/deploy/backend:v7.1.0
-        template: scheduler-deployment.yaml
       - equal:
           path: spec.template.spec.containers[0].image
           value: oci.spacelift.io/deploy/backend:v7.1.0
@@ -103,7 +97,6 @@ tests:
 
   - it: uses the deprecated shared.image as it is and ignores backendImage
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
       shared.image: legacy.example.com/spacelift/backend:v6.5.0
@@ -121,56 +114,7 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].image
           value: legacy.example.com/spacelift/backend:v6.5.0
-        template: scheduler-deployment.yaml
-      - equal:
-          path: spec.template.spec.containers[0].image
-          value: legacy.example.com/spacelift/backend:v6.5.0
         template: vcs-gateway-deployment.yaml
-
-  - it: skips the standalone scheduler when the appVersion is v6.4.0 or newer
-    template: scheduler-deployment.yaml
-    chart:
-      appVersion: v7.1.0
-    asserts:
-      - hasDocuments:
-          count: 0
-
-  - it: deploys the standalone scheduler when the tag is older than v6.4.0
-    template: scheduler-deployment.yaml
-    chart:
-      appVersion: v7.1.0
-    set:
-      shared.backendImage.tag: v6.3.0
-    asserts:
-      - hasDocuments:
-          count: 1
-
-  - it: deploys the standalone scheduler when the tag has no version
-    template: scheduler-deployment.yaml
-    set:
-      shared.backendImage.tag: latest
-    asserts:
-      - hasDocuments:
-          count: 1
-
-  - it: does not read the version from the appVersion when only a digest is set
-    template: scheduler-deployment.yaml
-    chart:
-      appVersion: v7.1.0
-    set:
-      shared.backendImage.digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
-    asserts:
-      - hasDocuments:
-          count: 1
-
-  - it: reads the version from the tag when a digest is also set
-    template: scheduler-deployment.yaml
-    set:
-      shared.backendImage.tag: v7.1.0
-      shared.backendImage.digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
-    asserts:
-      - hasDocuments:
-          count: 0
 
   - it: rejects an empty repository
     template: server-deployment.yaml

@@ -3,7 +3,6 @@ suite: launcher image
 templates:
   - server-deployment.yaml
   - drain-deployment.yaml
-  - scheduler-deployment.yaml
   - vcs-gateway-deployment.yaml
 tests:
   - it: leaves the launcher env vars to the secrets when shared.image is set
@@ -113,19 +112,12 @@ tests:
             value: v7.1.0
         template: drain-deployment.yaml
 
-  - it: does not set the launcher env vars on the scheduler and VCS Gateway
+  - it: does not set the launcher env vars on the VCS Gateway
     set:
-      scheduler.enabled: true
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
       shared.launcherImage.enabled: true
     asserts:
-      - notContains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: LAUNCHER_IMAGE
-          any: true
-        template: scheduler-deployment.yaml
       - notContains:
           path: spec.template.spec.containers[0].env
           content:

@@ -5,7 +5,7 @@ deploy:
 shared:
   secretRef:
 
-  # Secrets with registry credentials for the server, drain, scheduler,
+  # Secrets with registry credentials for the server, drain,
   # VCS Gateway and Flows images. Strongly recommended starting with Spacelift v8.0.0.
   # The secrets must exist in the release namespace.
   # Launcher image pull credentials are configured separately on the Worker Controller side.
@@ -25,9 +25,7 @@ shared:
     repository: deploy/backend
     # Defaults to the chart appVersion. Left out of the image when digest is set.
     tag: ""
-    # Pins the image, for example sha256:0e07... The chart cannot read the
-    # Spacelift version from a digest, so set tag as well to let the scheduler
-    # check below use it, or set scheduler.enabled yourself.
+    # Pins the image, for example sha256:0e07...
     digest: ""
     # Use the FIPS 140 build of the image, <repository>-fips.
     fips: false
@@ -140,60 +138,6 @@ drain:
   serviceAccount:
     create: false
     name: "spacelift-drain"
-    automount: true
-    annotations: {}
-  lifecycle: {}
-  pdb:
-    enabled: false
-
-# The standalone scheduler workload is only deployed for applications older than
-# v6.4.0. From v6.4.0 on the drain runs the cron scheduler itself, and everything
-# below is ignored. The version is read from the backend image tag, which defaults
-# to the chart appVersion; if it cannot be read, the workload is deployed. See
-# templates/_helpers.tpl.
-scheduler:
-  # Whether to deploy the standalone scheduler workload:
-  #   null  - decide from the application version in the backend image tag (default)
-  #   true  - always deploy it
-  #   false - never deploy it
-  # Set it explicitly when the image tag does not carry a readable version, for
-  # example when a registry mirror rewrites tags or the build is not a release.
-  enabled: null
-  replicaCount: 3
-  # Deployment strategy. Empty or null uses the Kubernetes default (RollingUpdate, 25% surge and unavailable).
-  strategy: {}
-  pullPolicy: Always
-  securityContext:
-    # TODO Make sure we can run the image as non root user
-    #  runAsNonRoot: true
-    allowPrivilegeEscalation: false
-  resources:
-    requests:
-      memory: "50Mi"
-      cpu: "50m"
-  startupProbe:
-    httpGet:
-      path: /startup
-      port: instrumentation
-  podLabels: {}
-  # Annotations added to the scheduler Deployment, for example for Reloader.
-  deploymentAnnotations: {}
-  # Annotations added to the scheduler pods.
-  podAnnotations: {}
-  podSecurityContext: {}
-  volumes: []
-  volumeMounts: []
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-  # Seconds Kubernetes waits for the pod to stop before it kills it.
-  # null uses the Kubernetes default of 30. 0 kills the pod right away.
-  terminationGracePeriodSeconds: null
-  # serviceAccount controls whether an individual service account should be created for the scheduler.
-  # If create is set to true, a name must be specified.
-  serviceAccount:
-    create: false
-    name: "spacelift-scheduler"
     automount: true
     annotations: {}
   lifecycle: {}

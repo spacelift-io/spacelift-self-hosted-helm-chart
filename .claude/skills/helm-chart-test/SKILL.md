@@ -20,7 +20,7 @@ Paths in this document are relative to the repo root.
 
 **During feature implementation**, infer the affected templates from the diff or the requested change. Add or update focused tests for the changed rendered behavior without pausing to ask about scope, unless the requested behavior is ambiguous.
 
-**If `[component]` is given** (e.g. `vcs-gateway`, `server`, `drain`, `scheduler`), work on the templates with that prefix and the test files that cover them.
+**If `[component]` is given** (e.g. `vcs-gateway`, `server`, `drain`), work on the templates with that prefix and the test files that cover them.
 
 **If nothing is given for a standalone task**, ask which component or template the user wants covered.
 

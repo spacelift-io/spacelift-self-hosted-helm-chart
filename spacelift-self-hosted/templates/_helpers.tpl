@@ -13,13 +13,6 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
-Expand the name of the chart.
-*/}}
-{{- define "spacelift.schedulerName" -}}
-{{- printf "%s-scheduler" (default .Values.nameOverride .Chart.Name) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -69,18 +62,6 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Common scheduler labels
-*/}}
-{{- define "spacelift.schedulerLabels" -}}
-helm.sh/chart: {{ include "spacelift.chart" . }}
-{{ include "spacelift.schedulerSelectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- end }}
-
-{{/*
 Server Selector labels
 */}}
 {{- define "spacelift.serverSelectorLabels" -}}
@@ -94,14 +75,6 @@ Selector drain labels
 {{- define "spacelift.drainSelectorLabels" -}}
 app.kubernetes.io/name: {{ include "spacelift.drainName" . }}
 app.kubernetes.io/instance: {{ printf "%s-drain" .Release.Name }}
-{{- end }}
-
-{{/*
-Selector scheduler labels
-*/}}
-{{- define "spacelift.schedulerSelectorLabels" -}}
-app.kubernetes.io/name: {{ include "spacelift.schedulerName" . }}
-app.kubernetes.io/instance: {{ printf "%s-scheduler" .Release.Name }}
 {{- end }}
 
 {{/*
@@ -132,17 +105,6 @@ Create the name of the service account to use for the drain.
 {{- define "spacelift.drainServiceAccountName" -}}
 {{- if .Values.drain.serviceAccount.create }}
 {{- .Values.drain.serviceAccount.name }}
-{{- else }}
-{{- include "spacelift.serviceAccountName" . }}
-{{- end }}
-{{- end }}
-
-{{/*
-Create the name of the service account to use for the scheduler.
-*/}}
-{{- define "spacelift.schedulerServiceAccountName" -}}
-{{- if .Values.scheduler.serviceAccount.create }}
-{{- .Values.scheduler.serviceAccount.name }}
 {{- else }}
 {{- include "spacelift.serviceAccountName" . }}
 {{- end }}
@@ -245,57 +207,6 @@ Pick the case that fits you:
 The shared.launcherImage values win over LAUNCHER_IMAGE and LAUNCHER_IMAGE_TAG
 in your secrets.` -}}
 	{{- end -}}
-{{- end -}}
-
-{{/*
-The application version, taken from the backend image tag: the tag of the
-deprecated .Values.shared.image when it is set, and the tag of
-.Values.shared.backendImage otherwise.
-
-With a digest, the image carries no tag, so only a tag the user set explicitly
-counts. The chart appVersion does not: the digest may belong to another version.
-
-Returns the "X.Y.Z" core of the tag, or an empty string when there is no tag or
-the tag is not of the form vX.Y.Z. What an empty result means is up to the caller.
-*/}}
-{{- define "spacelift.appVersionCore" -}}
-	{{- $tag := "" -}}
-	{{- if .Values.shared.image -}}
-		{{- $parts := .Values.shared.image | splitList "/" | last | splitList ":" -}}
-		{{- if eq (len $parts) 2 -}}
-			{{- $tag = index $parts 1 -}}
-		{{- end -}}
-	{{- else if .Values.shared.backendImage.digest -}}
-		{{- $tag = .Values.shared.backendImage.tag -}}
-	{{- else -}}
-		{{- $tag = include "spacelift.backendImageTag" . -}}
-	{{- end -}}
-	{{- if regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" $tag -}}
-		{{- regexFind "[0-9]+\\.[0-9]+\\.[0-9]+" $tag -}}
-	{{- end -}}
-{{- end -}}
-
-{{/*
-Whether the standalone scheduler workload still has to be deployed.
-
-An explicit .Values.scheduler.enabled decides on its own, in both directions. Left
-unset (null), the chart works it out from the application version instead.
-
-From application v6.4.0 on, the drain always runs the cron scheduler itself, so a
-separate scheduler workload is redundant. Below that it is required, and so is
-the case where the version cannot be read: the scheduler is kept, because losing
-it on an application that does not schedule on its own would silently stop all
-recurring work.
-*/}}
-{{- define "spacelift.deployStandaloneScheduler" -}}
-{{- if .Values.deploy.enabled -}}
-{{- if not (kindIs "invalid" .Values.scheduler.enabled) -}}
-{{- if .Values.scheduler.enabled -}}true{{- end -}}
-{{- else -}}
-{{- $core := include "spacelift.appVersionCore" . -}}
-{{- if or (not $core) (semverCompare "<6.4.0" $core) -}}true{{- end -}}
-{{- end -}}
-{{- end -}}
 {{- end -}}
 
 {{/*

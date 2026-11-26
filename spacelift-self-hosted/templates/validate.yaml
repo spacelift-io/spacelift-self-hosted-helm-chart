@@ -1,3 +1,16 @@
 {{- if not (or .Values.deploy.enabled .Values.flows.enabled) }}
 {{- fail "deploy.enabled and flows.enabled are both false, so the chart would install nothing" }}
 {{- end }}
+
+{{- /*
+Since v6.4.0 the drain runs the recurring work (drift detection, scheduled runs,
+tasks, deletes) and this chart deploys nothing else for it. On an older backend
+image nothing would trigger that work, so stop before anything changes. An
+image tag without a readable version (digest only, rewritten tags) passes.
+*/}}
+{{- if .Values.deploy.enabled }}
+{{- $version := include "spacelift.appVersionCore" . }}
+{{- if and $version (semverCompare "<6.4.0" $version) }}
+{{- fail (printf "this chart needs Spacelift v6.4.0 or later, but the backend image %s is v%s. Upgrade the image first, or stay on chart 7.2." (include "spacelift.backendImage" .) $version) }}
+{{- end }}
+{{- end }}

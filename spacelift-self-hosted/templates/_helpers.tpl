@@ -313,3 +313,31 @@ appVersion, because Flows is released together with Spacelift.
 		{{- printf "%s:%s" $repository ($image.tag | default .Chart.AppVersion) -}}
 	{{- end -}}
 {{- end -}}
+
+{{/*
+The application version, taken from the backend image tag: the tag of the
+deprecated .Values.shared.image when it is set, and the tag of
+.Values.shared.backendImage otherwise.
+
+With a digest, the image carries no tag, so only a tag the user set explicitly
+counts. The chart appVersion does not: the digest may belong to another version.
+
+Returns the "X.Y.Z" core of the tag, or an empty string when there is no tag or
+the tag is not of the form vX.Y.Z. What an empty result means is up to the caller.
+*/}}
+{{- define "spacelift.appVersionCore" -}}
+	{{- $tag := "" -}}
+	{{- if .Values.shared.image -}}
+		{{- $parts := .Values.shared.image | splitList "/" | last | splitList ":" -}}
+		{{- if eq (len $parts) 2 -}}
+			{{- $tag = index $parts 1 -}}
+		{{- end -}}
+	{{- else if .Values.shared.backendImage.digest -}}
+		{{- $tag = .Values.shared.backendImage.tag -}}
+	{{- else -}}
+		{{- $tag = include "spacelift.backendImageTag" . -}}
+	{{- end -}}
+	{{- if regexMatch "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+].*)?$" $tag -}}
+		{{- regexFind "[0-9]+\\.[0-9]+\\.[0-9]+" $tag -}}
+	{{- end -}}
+{{- end -}}

@@ -1,25 +1,25 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: deploy.enabled switch
 templates:
-  - drain-deployment.yaml
-  - drain-pdb.yaml
-  - drain-serviceaccount.yaml
-  - mqtt-service.yaml
-  - server-deployment.yaml
-  - server-ingress-v6.yaml
-  - server-ingress.yaml
-  - server-pdb.yaml
-  - server-serviceaccount.yaml
-  - service.yaml
-  - serviceaccount.yaml
-  - vcs-gateway-deployment.yaml
-  - vcs-gateway-gateway.yaml
-  - vcs-gateway-httproute.yaml
-  - vcs-gateway-ingress.yaml
-  - vcs-gateway-pdb.yaml
-  - vcs-gateway-service.yaml
-  - vcs-gateway-serviceaccount.yaml
-  - flows-server-deployment.yaml
+  - deploy/drain/deployment.yaml
+  - deploy/drain/pdb.yaml
+  - deploy/drain/serviceaccount.yaml
+  - deploy/server/mqtt-service.yaml
+  - deploy/server/deployment.yaml
+  - deploy/server/ingress-v6.yaml
+  - deploy/server/ingress.yaml
+  - deploy/server/pdb.yaml
+  - deploy/server/serviceaccount.yaml
+  - deploy/server/service.yaml
+  - deploy/serviceaccount.yaml
+  - deploy/vcs-gateway/deployment.yaml
+  - deploy/vcs-gateway/gateway.yaml
+  - deploy/vcs-gateway/httproute.yaml
+  - deploy/vcs-gateway/ingress.yaml
+  - deploy/vcs-gateway/pdb.yaml
+  - deploy/vcs-gateway/service.yaml
+  - deploy/vcs-gateway/serviceaccount.yaml
+  - flows/server-deployment.yaml
   - validate.yaml
 set:
   shared.launcherImage.enabled: true
@@ -28,13 +28,13 @@ tests:
     asserts:
       - isKind:
           of: Deployment
-        template: server-deployment.yaml
+        template: deploy/server/deployment.yaml
       - isKind:
           of: Deployment
-        template: drain-deployment.yaml
+        template: deploy/drain/deployment.yaml
       - isKind:
           of: Service
-        template: service.yaml
+        template: deploy/server/service.yaml
 
   - it: renders nothing of Spacelift when deploy is disabled, whatever else is set
     set:
@@ -58,61 +58,61 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
-        template: drain-deployment.yaml
+        template: deploy/drain/deployment.yaml
       - hasDocuments:
           count: 0
-        template: drain-pdb.yaml
+        template: deploy/drain/pdb.yaml
       - hasDocuments:
           count: 0
-        template: drain-serviceaccount.yaml
+        template: deploy/drain/serviceaccount.yaml
       - hasDocuments:
           count: 0
-        template: mqtt-service.yaml
+        template: deploy/server/mqtt-service.yaml
       - hasDocuments:
           count: 0
-        template: server-deployment.yaml
+        template: deploy/server/deployment.yaml
       - hasDocuments:
           count: 0
-        template: server-ingress-v6.yaml
+        template: deploy/server/ingress-v6.yaml
       - hasDocuments:
           count: 0
-        template: server-ingress.yaml
+        template: deploy/server/ingress.yaml
       - hasDocuments:
           count: 0
-        template: server-pdb.yaml
+        template: deploy/server/pdb.yaml
       - hasDocuments:
           count: 0
-        template: server-serviceaccount.yaml
+        template: deploy/server/serviceaccount.yaml
       - hasDocuments:
           count: 0
-        template: service.yaml
+        template: deploy/server/service.yaml
       - hasDocuments:
           count: 0
-        template: serviceaccount.yaml
+        template: deploy/serviceaccount.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-deployment.yaml
+        template: deploy/vcs-gateway/deployment.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-gateway.yaml
+        template: deploy/vcs-gateway/gateway.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-httproute.yaml
+        template: deploy/vcs-gateway/httproute.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-ingress.yaml
+        template: deploy/vcs-gateway/ingress.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-pdb.yaml
+        template: deploy/vcs-gateway/pdb.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-service.yaml
+        template: deploy/vcs-gateway/service.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-serviceaccount.yaml
+        template: deploy/vcs-gateway/serviceaccount.yaml
       - isKind:
           of: Deployment
-        template: flows-server-deployment.yaml
+        template: flows/server-deployment.yaml
 
   - it: refuses to install nothing
     set:

@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: workload pod settings
 templates:
-  - server-deployment.yaml
-  - drain-deployment.yaml
-  - vcs-gateway-deployment.yaml
+  - deploy/server/deployment.yaml
+  - deploy/drain/deployment.yaml
+  - deploy/vcs-gateway/deployment.yaml
 set:
   shared.launcherImage.enabled: true
   vcsGateway.enabled: true
@@ -18,17 +18,17 @@ tests:
       vcsGateway.podAnnotations:
         example.com/component: vcs-gateway
     asserts:
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         equal:
           path: spec.template.metadata.annotations
           value:
             example.com/component: server
-      - template: drain-deployment.yaml
+      - template: deploy/drain/deployment.yaml
         equal:
           path: spec.template.metadata.annotations
           value:
             example.com/component: drain
-      - template: vcs-gateway-deployment.yaml
+      - template: deploy/vcs-gateway/deployment.yaml
         equal:
           path: spec.template.metadata.annotations
           value:
@@ -45,15 +45,15 @@ tests:
       drain.terminationGracePeriodSeconds: 300
       vcsGateway.terminationGracePeriodSeconds: 90
     asserts:
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 120
-      - template: drain-deployment.yaml
+      - template: deploy/drain/deployment.yaml
         equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 300
-      - template: vcs-gateway-deployment.yaml
+      - template: deploy/vcs-gateway/deployment.yaml
         equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 90
@@ -74,7 +74,7 @@ tests:
           path: spec.template.spec.terminationGracePeriodSeconds
 
   - it: rejects a terminationGracePeriodSeconds that is not a number
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       server.terminationGracePeriodSeconds: "30s"
     asserts:
@@ -82,7 +82,7 @@ tests:
           errorPattern: "/server/terminationGracePeriodSeconds': got string, want"
 
   - it: rejects a negative terminationGracePeriodSeconds
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       server.terminationGracePeriodSeconds: -1
     asserts:

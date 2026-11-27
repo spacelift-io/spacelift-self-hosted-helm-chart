@@ -1,23 +1,23 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: workload deployment settings
 templates:
-  - server-deployment.yaml
-  - drain-deployment.yaml
-  - vcs-gateway-deployment.yaml
+  - deploy/server/deployment.yaml
+  - deploy/drain/deployment.yaml
+  - deploy/vcs-gateway/deployment.yaml
 set:
   shared.launcherImage.enabled: true
   vcsGateway.enabled: true
   vcsGateway.domain: vcs-gateway.example.com
 tests:
   - it: renders 3 drain replicas by default
-    template: drain-deployment.yaml
+    template: deploy/drain/deployment.yaml
     asserts:
       - equal:
           path: spec.replicas
           value: 3
 
   - it: sets the drain replicas
-    template: drain-deployment.yaml
+    template: deploy/drain/deployment.yaml
     set:
       drain.replicaCount: 5
     asserts:
@@ -26,7 +26,7 @@ tests:
           value: 5
 
   - it: keeps a drain replicaCount of 0
-    template: drain-deployment.yaml
+    template: deploy/drain/deployment.yaml
     set:
       drain.replicaCount: 0
     asserts:
@@ -35,7 +35,7 @@ tests:
           value: 0
 
   - it: leaves the drain replicas out when replicaCount is null
-    template: drain-deployment.yaml
+    template: deploy/drain/deployment.yaml
     set:
       drain.replicaCount: null
     asserts:
@@ -44,7 +44,7 @@ tests:
 
   - it: keeps the rolling update strategy on the server and VCS Gateway by default
     asserts:
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         equal:
           path: spec.strategy
           value:
@@ -52,7 +52,7 @@ tests:
             rollingUpdate:
               maxSurge: 0
               maxUnavailable: 90%
-      - template: vcs-gateway-deployment.yaml
+      - template: deploy/vcs-gateway/deployment.yaml
         equal:
           path: spec.strategy
           value:
@@ -63,7 +63,7 @@ tests:
 
   - it: leaves the strategy to Kubernetes on the drain by default
     asserts:
-      - template: drain-deployment.yaml
+      - template: deploy/drain/deployment.yaml
         notExists:
           path: spec.strategy
 
@@ -82,7 +82,7 @@ tests:
         rollingUpdate:
           maxUnavailable: 1
     asserts:
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         equal:
           path: spec.strategy
           value:
@@ -90,7 +90,7 @@ tests:
             rollingUpdate:
               maxSurge: 1
               maxUnavailable: 0
-      - template: drain-deployment.yaml
+      - template: deploy/drain/deployment.yaml
         equal:
           path: spec.strategy
           value:
@@ -98,7 +98,7 @@ tests:
             rollingUpdate:
               maxSurge: 50%
               maxUnavailable: 25%
-      - template: vcs-gateway-deployment.yaml
+      - template: deploy/vcs-gateway/deployment.yaml
         equal:
           path: spec.strategy
           value:
@@ -116,12 +116,12 @@ tests:
         type: Recreate
         rollingUpdate: null
     asserts:
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         equal:
           path: spec.strategy
           value:
             type: Recreate
-      - template: vcs-gateway-deployment.yaml
+      - template: deploy/vcs-gateway/deployment.yaml
         equal:
           path: spec.strategy
           value:
@@ -132,15 +132,15 @@ tests:
       server.strategy: null
       vcsGateway.strategy: null
     asserts:
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         notExists:
           path: spec.strategy
-      - template: vcs-gateway-deployment.yaml
+      - template: deploy/vcs-gateway/deployment.yaml
         notExists:
           path: spec.strategy
 
   - it: rejects type Recreate on the server while the default rollingUpdate is merged in
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       server.strategy.type: Recreate
     asserts:
@@ -148,7 +148,7 @@ tests:
           errorPattern: "/server/strategy/rollingUpdate': got object, want null"
 
   - it: rejects type Recreate together with a rollingUpdate on the drain
-    template: drain-deployment.yaml
+    template: deploy/drain/deployment.yaml
     set:
       drain.strategy:
         type: Recreate
@@ -159,7 +159,7 @@ tests:
           errorPattern: "/drain/strategy/rollingUpdate': got object, want null"
 
   - it: rejects an unknown strategy type
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       server.strategy.type: BlueGreen
     asserts:
@@ -167,7 +167,7 @@ tests:
           errorPattern: "/server/strategy/type"
 
   - it: rejects an unknown rollingUpdate field
-    template: drain-deployment.yaml
+    template: deploy/drain/deployment.yaml
     set:
       drain.strategy.rollingUpdate.maxSurged: 1
     asserts:
@@ -183,17 +183,17 @@ tests:
       vcsGateway.deploymentAnnotations:
         secret.reloader.stakater.com/reload: vcs-gateway-secret
     asserts:
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         equal:
           path: metadata.annotations
           value:
             secret.reloader.stakater.com/reload: server-secret
-      - template: drain-deployment.yaml
+      - template: deploy/drain/deployment.yaml
         equal:
           path: metadata.annotations
           value:
             secret.reloader.stakater.com/reload: drain-secret
-      - template: vcs-gateway-deployment.yaml
+      - template: deploy/vcs-gateway/deployment.yaml
         equal:
           path: metadata.annotations
           value:
@@ -217,7 +217,7 @@ tests:
           path: spec.template.metadata.annotations
 
   - it: keeps deployment and pod annotations apart
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       server.deploymentAnnotations:
         example.com/deployment: "true"
@@ -234,7 +234,7 @@ tests:
             example.com/pod: "true"
 
   - it: rejects deployment annotations with a non-string value
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       server.deploymentAnnotations:
         example.com/count: 1

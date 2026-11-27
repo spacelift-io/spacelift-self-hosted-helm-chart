@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: backend image
 templates:
-  - server-deployment.yaml
-  - drain-deployment.yaml
-  - vcs-gateway-deployment.yaml
+  - deploy/server/deployment.yaml
+  - deploy/drain/deployment.yaml
+  - deploy/vcs-gateway/deployment.yaml
 set:
   shared.launcherImage.enabled: true
 tests:
@@ -17,18 +17,18 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].image
           value: oci.spacelift.io/deploy/backend:v7.1.0
-        template: server-deployment.yaml
+        template: deploy/server/deployment.yaml
       - equal:
           path: spec.template.spec.containers[0].image
           value: oci.spacelift.io/deploy/backend:v7.1.0
-        template: drain-deployment.yaml
+        template: deploy/drain/deployment.yaml
       - equal:
           path: spec.template.spec.containers[0].image
           value: oci.spacelift.io/deploy/backend:v7.1.0
-        template: vcs-gateway-deployment.yaml
+        template: deploy/vcs-gateway/deployment.yaml
 
   - it: builds the image from registry, repository and tag
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       shared.backendImage.registry: mirror.example.com/spacelift
       shared.backendImage.repository: backend
@@ -39,7 +39,7 @@ tests:
           value: mirror.example.com/spacelift/backend:v7.2.0
 
   - it: leaves the tag out when a digest is set
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       shared.backendImage.registry: mirror.example.com/spacelift
       shared.backendImage.repository: backend
@@ -51,7 +51,7 @@ tests:
           value: mirror.example.com/spacelift/backend@sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
   - it: leaves the tag out when only a digest is set
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     chart:
       appVersion: v7.1.0
     set:
@@ -62,7 +62,7 @@ tests:
           value: oci.spacelift.io/deploy/backend@sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
 
   - it: uses the FIPS build when fips is set
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     chart:
       appVersion: v7.1.0
     set:
@@ -73,7 +73,7 @@ tests:
           value: oci.spacelift.io/deploy/backend-fips:v7.1.0
 
   - it: drops a trailing slash from the registry
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     chart:
       appVersion: v7.1.0
     set:
@@ -84,7 +84,7 @@ tests:
           value: mirror.example.com/deploy/backend:v7.1.0
 
   - it: uses the repository as it is when the registry is empty
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     chart:
       appVersion: v7.1.0
     set:
@@ -106,18 +106,18 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].image
           value: legacy.example.com/spacelift/backend:v6.5.0
-        template: server-deployment.yaml
+        template: deploy/server/deployment.yaml
       - equal:
           path: spec.template.spec.containers[0].image
           value: legacy.example.com/spacelift/backend:v6.5.0
-        template: drain-deployment.yaml
+        template: deploy/drain/deployment.yaml
       - equal:
           path: spec.template.spec.containers[0].image
           value: legacy.example.com/spacelift/backend:v6.5.0
-        template: vcs-gateway-deployment.yaml
+        template: deploy/vcs-gateway/deployment.yaml
 
   - it: rejects an empty repository
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       shared.backendImage.repository: ""
     asserts:
@@ -125,7 +125,7 @@ tests:
           errorPattern: "/shared/backendImage/repository': minLength: got 0, want 1"
 
   - it: rejects a fips value that is not a boolean
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       shared.backendImage.fips: "yes"
     asserts:
@@ -133,7 +133,7 @@ tests:
           errorPattern: "/shared/backendImage/fips': got string, want boolean"
 
   - it: rejects unknown backendImage fields
-    template: server-deployment.yaml
+    template: deploy/server/deployment.yaml
     set:
       shared.backendImage.name: backend
     asserts:

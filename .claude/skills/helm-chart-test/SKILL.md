@@ -42,7 +42,7 @@ Ask the user only when there are multiple plausible semantics, or when the affec
 - `spacelift-self-hosted/Chart.yaml` - chart metadata.
 - `spacelift-self-hosted/values.yaml` - defaults.
 - `spacelift-self-hosted/values.schema.json` - JSON Schema validated on every render, including helm-unittest runs.
-- `spacelift-self-hosted/templates/` - the templates, mostly named `<component>-<kind>.yaml`, e.g. `vcs-gateway-deployment.yaml`, `server-pdb.yaml`.
+- `spacelift-self-hosted/templates/` - the templates. Components of the main deployment sit in `deploy/<component>/<kind>.yaml`, e.g. `deploy/vcs-gateway/deployment.yaml`, `deploy/server/pdb.yaml`. Flows templates sit in `flows/`. Chart-wide files (`_helpers.tpl`, `validate.yaml`, `extra-manifests.yaml`, `NOTES.txt`) stay at the top level.
 - `spacelift-self-hosted/tests/` - the test suites, one `<area>_test.yaml` file per behavior area. Extend an existing file when the behavior fits its suite; add a new file for a new area.
 - `spacelift-self-hosted/tests/__snapshot__/` - snapshot output that `make test` writes. Empty while no suite uses snapshot assertions.
 
@@ -54,7 +54,7 @@ Tests are YAML files in `spacelift-self-hosted/tests/` that assert on rendered K
 
 - Start every test file with the schema comment:
   `# yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json`
-- Reference templates by their path relative to `templates/`, without a `templates/` prefix: `vcs-gateway-deployment.yaml`. The plugin accepts the prefix too, but this repo leaves it out.
+- Reference templates by their path relative to `templates/`, without a `templates/` prefix: `deploy/vcs-gateway/deployment.yaml`. The plugin accepts the prefix too, but this repo leaves it out.
 - Set values with inline `set` blocks, so each test shows its own inputs. Do not add separate values files for tests unless the user asks.
 - Tests run with `--strict`, so an unknown or misspelled field in a test file fails the run instead of being ignored.
 - `values.schema.json` sets `additionalProperties: false` on its objects, so a `set` key that is not in the schema fails the render. If a test needs a new value, the schema must be updated too - and that is a chart change, not a test change, so flag it to the user.
@@ -66,7 +66,7 @@ Tests are YAML files in `spacelift-self-hosted/tests/` that assert on rendered K
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: <descriptive suite name>
 templates:
-  - vcs-gateway-deployment.yaml
+  - deploy/vcs-gateway/deployment.yaml
 tests:
   - it: <test case description>
     set:
@@ -192,8 +192,8 @@ Several templates guard values with `required`, e.g. `vcsGateway.domain` and `vc
 ```yaml
   - it: targets one Deployment by name
     templates:
-      - server-deployment.yaml
-      - drain-deployment.yaml
+      - deploy/server/deployment.yaml
+      - deploy/drain/deployment.yaml
     asserts:
       - equal:
           path: spec.replicas
@@ -226,7 +226,7 @@ Wrong:
 
 ```yaml
       - notContains:
-          template: server-deployment.yaml
+          template: deploy/server/deployment.yaml
           path: spec.template.spec.containers
           content:
             name: cloud-sql-proxy
@@ -235,7 +235,7 @@ Wrong:
 Correct:
 
 ```yaml
-      - template: server-deployment.yaml
+      - template: deploy/server/deployment.yaml
         notContains:
           path: spec.template.spec.containers
           content:

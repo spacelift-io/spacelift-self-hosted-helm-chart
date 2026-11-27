@@ -1,13 +1,13 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: VCS gateway components
 templates:
-  - vcs-gateway-deployment.yaml
-  - vcs-gateway-service.yaml
-  - vcs-gateway-serviceaccount.yaml
-  - vcs-gateway-ingress.yaml
-  - vcs-gateway-gateway.yaml
-  - vcs-gateway-httproute.yaml
-  - vcs-gateway-pdb.yaml
+  - deploy/vcs-gateway/deployment.yaml
+  - deploy/vcs-gateway/service.yaml
+  - deploy/vcs-gateway/serviceaccount.yaml
+  - deploy/vcs-gateway/ingress.yaml
+  - deploy/vcs-gateway/gateway.yaml
+  - deploy/vcs-gateway/httproute.yaml
+  - deploy/vcs-gateway/pdb.yaml
 tests:
   - it: renders no components when the VCS gateway is disabled
     set:
@@ -21,25 +21,25 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
-        template: vcs-gateway-deployment.yaml
+        template: deploy/vcs-gateway/deployment.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-service.yaml
+        template: deploy/vcs-gateway/service.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-serviceaccount.yaml
+        template: deploy/vcs-gateway/serviceaccount.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-ingress.yaml
+        template: deploy/vcs-gateway/ingress.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-gateway.yaml
+        template: deploy/vcs-gateway/gateway.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-httproute.yaml
+        template: deploy/vcs-gateway/httproute.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-pdb.yaml
+        template: deploy/vcs-gateway/pdb.yaml
 
   - it: renders the default components when the VCS gateway is enabled
     set:
@@ -48,25 +48,25 @@ tests:
     asserts:
       - isKind:
           of: Deployment
-        template: vcs-gateway-deployment.yaml
+        template: deploy/vcs-gateway/deployment.yaml
       - isKind:
           of: Service
-        template: vcs-gateway-service.yaml
+        template: deploy/vcs-gateway/service.yaml
       - isKind:
           of: Ingress
-        template: vcs-gateway-ingress.yaml
+        template: deploy/vcs-gateway/ingress.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-serviceaccount.yaml
+        template: deploy/vcs-gateway/serviceaccount.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-gateway.yaml
+        template: deploy/vcs-gateway/gateway.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-httproute.yaml
+        template: deploy/vcs-gateway/httproute.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-pdb.yaml
+        template: deploy/vcs-gateway/pdb.yaml
 
   - it: renders optional components when their values are enabled
     set:
@@ -81,28 +81,28 @@ tests:
     asserts:
       - isKind:
           of: Deployment
-        template: vcs-gateway-deployment.yaml
+        template: deploy/vcs-gateway/deployment.yaml
       - isKind:
           of: Service
-        template: vcs-gateway-service.yaml
+        template: deploy/vcs-gateway/service.yaml
       - isKind:
           of: ServiceAccount
-        template: vcs-gateway-serviceaccount.yaml
+        template: deploy/vcs-gateway/serviceaccount.yaml
       - hasDocuments:
           count: 0
-        template: vcs-gateway-ingress.yaml
+        template: deploy/vcs-gateway/ingress.yaml
       - isKind:
           of: Gateway
-        template: vcs-gateway-gateway.yaml
+        template: deploy/vcs-gateway/gateway.yaml
       - isKind:
           of: HTTPRoute
-        template: vcs-gateway-httproute.yaml
+        template: deploy/vcs-gateway/httproute.yaml
       - isKind:
           of: PodDisruptionBudget
-        template: vcs-gateway-pdb.yaml
+        template: deploy/vcs-gateway/pdb.yaml
 
   - it: uses service.type and no appProtocol for the VCS Gateway Service by default
-    template: vcs-gateway-service.yaml
+    template: deploy/vcs-gateway/service.yaml
     set:
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
@@ -115,7 +115,7 @@ tests:
           path: spec.ports[0].appProtocol
 
   - it: sets the VCS Gateway Service type and the appProtocol of the gRPC port
-    template: vcs-gateway-service.yaml
+    template: deploy/vcs-gateway/service.yaml
     set:
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
@@ -139,7 +139,7 @@ tests:
           any: true
 
   - it: uses the vcs-gateway-cert TLS secret on the VCS Gateway Ingress by default
-    template: vcs-gateway-ingress.yaml
+    template: deploy/vcs-gateway/ingress.yaml
     set:
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
@@ -152,7 +152,7 @@ tests:
               secretName: vcs-gateway-cert
 
   - it: sets a custom TLS secret name on the VCS Gateway Ingress
-    template: vcs-gateway-ingress.yaml
+    template: deploy/vcs-gateway/ingress.yaml
     set:
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
@@ -166,7 +166,7 @@ tests:
               secretName: custom-tls
 
   - it: leaves out secretName on the VCS Gateway Ingress when the TLS secret name is empty
-    template: vcs-gateway-ingress.yaml
+    template: deploy/vcs-gateway/ingress.yaml
     set:
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
@@ -181,7 +181,7 @@ tests:
           path: spec.tls[0].secretName
 
   - it: does not use vcsGateway.gateway.certificateRef for the VCS Gateway Ingress
-    template: vcs-gateway-ingress.yaml
+    template: deploy/vcs-gateway/ingress.yaml
     set:
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com
@@ -192,7 +192,7 @@ tests:
           value: vcs-gateway-cert
 
   - it: fails when vcsGateway.ingress.tlsSecretName is not a string
-    template: vcs-gateway-ingress.yaml
+    template: deploy/vcs-gateway/ingress.yaml
     set:
       vcsGateway.enabled: true
       vcsGateway.domain: vcs-gateway.example.com

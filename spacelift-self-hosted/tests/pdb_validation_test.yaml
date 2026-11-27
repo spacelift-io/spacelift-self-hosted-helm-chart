@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/helm-unittest/helm-unittest/main/schema/helm-testsuite.json
 suite: PodDisruptionBudget validation
 templates:
-  - server-pdb.yaml
+  - deploy/server/pdb.yaml
 tests:
   - it: rejects an enabled PDB without an availability setting
     set:

@@ -8,4 +8,4 @@ HELM_UNITTEST_FILE  ?= tests/**/*.yaml
 
 .PHONY: test
 test:
-	docker run --rm --user "$$(id -u):$$(id -g)" -e HOME=/tmp -v $(MAKEFILE_DIR):/apps helmunittest/helm-unittest:$(HELM_UNITTEST_TAG) --strict -u --file '$(HELM_UNITTEST_FILE)' .
+	docker run --rm --user "$$(id -u):$$(id -g)" -e HOME=/tmp -v $(MAKEFILE_DIR):/apps helmunittest/helm-unittest:$(HELM_UNITTEST_TAG) --strict --file '$(HELM_UNITTEST_FILE)' .
